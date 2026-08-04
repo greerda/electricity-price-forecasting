@@ -1,0 +1,30 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Raw and generated data
+data/raw/**
+data/interim/**
+data/processed/**
+
+# Generated outputs
+outputs/models/**
+outputs/metrics/**
+outputs/predictions/**
+
+# Generated report files
+reports/_freeze/
+reports/capstone.html
+reports/capstone.pdf
+
+# Keep empty directories in Git
+!.gitkeep
