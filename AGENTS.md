@@ -624,3 +624,32 @@ Prioritize:
 8. professional repository quality.
 
 Avoid unnecessary scope expansion.
+
+## Project documentation maintenance
+
+When completing a substantial project task:
+
+- Update `docs/CURRENT_STATUS.md` with completed work, validation results,
+  unresolved issues, and the exact next task.
+- Update `docs/DECISIONS.md` when a methodological or architectural decision
+  is made.
+- Update `docs/DATA_DICTIONARY.md` when datasets, fields, units, time zones,
+  transformations, or derived features change.
+- Update `docs/PROJECT_PLAN.md` only when the project scope, schedule,
+  milestones, or deliverables change.
+- Do not modify documentation merely to restate unchanged information.
+- Include relevant documentation updates in the same Git commit as the
+  corresponding code change.
+
+  ## Code comments and documentation
+
+- Add concise docstrings to public modules, classes, and functions.
+- Add comments only where they explain business rules, methodological
+  decisions, non-obvious transformations, or important assumptions.
+- Document units, time zones, forecast horizons, and data-availability
+  constraints where they affect the code.
+- Explain safeguards against target leakage and look-ahead bias.
+- Do not add comments that merely repeat what the code already says.
+- Preserve useful existing comments and update comments when the related
+  implementation changes.
+- Use `TODO` comments only for specific, actionable unfinished work.

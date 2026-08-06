@@ -27,6 +27,11 @@ outputs/predictions/**
 #notebooks
 notebooks/02_data_cleaning_backup.ipynb
 
+# Local Jupyter configuration
+notebooks/.jupyter/
+
+# Python package build metadata
+*.egg-info/
 
 # Generated report files
 reports/_freeze/
