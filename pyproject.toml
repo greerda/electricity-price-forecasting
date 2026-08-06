@@ -1,0 +1,8 @@
+dependencies = [
+    "pandas",
+    "tzdata",
+]
+[tool.ruff]
+exclude = [
+    "notebooks/02_data_cleaning backup.ipynb",
+]

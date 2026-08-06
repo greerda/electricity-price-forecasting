@@ -24,6 +24,10 @@ outputs/models/**
 outputs/metrics/**
 outputs/predictions/**
 
+#notebooks
+notebooks/02_data_cleaning_backup.ipynb
+
+
 # Generated report files
 reports/_freeze/
 reports/capstone.html
