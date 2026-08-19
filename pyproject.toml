@@ -1,8 +1,32 @@
-dependencies = [
-    "pandas",
-    "tzdata",
-]
 [tool.ruff]
 exclude = [
     "notebooks/02_data_cleaning backup.ipynb",
 ]
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "electricity-forecasting"
+version = "0.0.0"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "pandas",
+    "tzdata",
+    "numpy",
+    "ipykernel",
+    "jupyter",
+    "nbconvert",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
