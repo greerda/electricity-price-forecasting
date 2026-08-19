@@ -1,3 +1,5 @@
+"""Leakage-safe feature creation for hourly electricity-price forecasting."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -8,6 +10,8 @@ def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create calendar features from the local market timestamp."""
     result = df.copy()
 
+    # Calendar values use market-local time because demand and price patterns
+    # follow the local business day, not the UTC clock.
     local_time = result["timestamp_local"]
 
     result["hour"] = local_time.dt.hour
@@ -18,6 +22,8 @@ def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
         result["day_of_week"].isin([5, 6]).astype(int)
     )
 
+    # Sine and cosine preserve the circular relationship: hour 23 is close to
+    # hour 0, even though their integer values are far apart.
     result["hour_sin"] = np.sin(
         2.0 * np.pi * result["hour"] / 24.0
     )
@@ -43,6 +49,7 @@ def add_lag_features(
     lags: tuple[int, ...],
 ) -> pd.DataFrame:
     """Create lagged values using past observations only."""
+    # Sorting makes each positional shift refer to an earlier market-hour.
     result = df.sort_values("timestamp_utc").copy()
 
     for lag in lags:
@@ -60,6 +67,8 @@ def add_rolling_features(
     Create rolling statistics that exclude the current observation.
     """
     result = df.sort_values("timestamp_utc").copy()
+    # Shift first so the current target is excluded from its own rolling
+    # statistic; otherwise the feature would leak target information.
     past_values = result[column].shift(1)
 
     for window in windows:
@@ -88,6 +97,8 @@ def add_load_ramp_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     result = df.sort_values("timestamp_utc").copy()
 
+    # Both terms end before the target hour, so actual metered load is used
+    # only as historical information rather than a contemporaneous predictor.
     result["load_change_lagged_1h"] = (
         result["load_mw"].shift(1)
         - result["load_mw"].shift(2)
@@ -103,6 +114,9 @@ def add_load_ramp_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def build_initial_features(df: pd.DataFrame) -> pd.DataFrame:
     """Build the initial leakage-safe feature dataset."""
+    # This initial set uses features known from the calendar or prior hours.
+    # Forecast-vintage load or weather variables require separate availability
+    # validation before they can be included in a day-ahead model.
     result = add_calendar_features(df)
 
     result = add_lag_features(
