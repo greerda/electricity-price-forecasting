@@ -1,9 +1,14 @@
+"""Cleaning and UTC-based integration of the January 2025 source data."""
+
 from __future__ import annotations
 
 import pandas as pd
 
 from electricity_forecasting.config import MARKET_TIMEZONE
 
+# These NOAA report types represent routine hourly observations.  Excluding
+# other report types avoids mixing in observations with different reporting
+# purposes or timing.
 VALID_REPORT_TYPES = {
     "FM-12",
     "FM-15",
@@ -15,6 +20,8 @@ def ensure_chronological_order(
     timestamp_column: str = "timestamp_utc",
 ) -> pd.DataFrame:
     """Sort data chronologically and reset the index."""
+    # Chronological ordering is required before time-series merges, lag features,
+    # rolling calculations, and train/validation/test splits.
     result = df.copy()
     result = result.sort_values(timestamp_column)
     return result.reset_index(drop=True)
@@ -26,6 +33,8 @@ def add_standard_identifiers(
     location: str,
 ) -> pd.DataFrame:
     """Add common market and location identifiers."""
+    # Standard identifiers make the PJM and NYISO tables easier to combine,
+    # filter, validate, and compare without relying on source-specific names.
     result = df.copy()
     result["market"] = market
     result["location"] = location
@@ -39,6 +48,8 @@ def create_utc_and_local_timestamps(
     Convert naive Eastern local timestamps into timezone-aware
     local and UTC timestamps.
     """
+    # NYISO source timestamps are naive local Eastern clock times.  Localizing
+    # before converting preserves the market-hour meaning across DST changes.
     timestamp_local = (
         pd.to_datetime(timestamp_series)
         .dt.tz_localize(
@@ -65,6 +76,9 @@ def clean_pjm_prices(
         "total_lmp_da",
     }
 
+    #required_columns is a set of column names the function needs.
+    #raw_df.columns is the DataFrame’s actual column names.
+    #.difference(...) returns items in required_columns that are not in raw_df.columns
     missing = required_columns.difference(raw_df.columns)
 
     if missing:
@@ -74,6 +88,8 @@ def clean_pjm_prices(
 
     df = raw_df.copy()
 
+    # Keep the project-scope PSEG pricing node only; other PJM nodes are not
+    # comparable observations for this market-location-hour study.
     df = df.loc[
         df["pnode_name"].eq("PSEG"),
         [
@@ -93,6 +109,8 @@ def clean_pjm_prices(
         utc=True,
     )
 
+    # Retain both source time representations so joins use an unambiguous UTC
+    # key while local hour remains available for later calendar features.
     df["timestamp_local"] = (
         pd.to_datetime(
             df["datetime_beginning_ept"],
@@ -105,6 +123,8 @@ def clean_pjm_prices(
         )
     )
 
+    # Component prices are retained for reconciliation and auditing, but they
+    # must not become contemporaneous predictors of total day-ahead LMP.
     df = df.rename(
         columns={
             "pnode_name": "location",
@@ -142,6 +162,7 @@ def clean_pjm_load(
 
     df = raw_df.copy()
 
+    # PS is PJM's load area corresponding to the selected PSEG study area.
     df = df.loc[
         df["load_area"].eq("PS"),
         [
@@ -207,6 +228,7 @@ def clean_nyiso_prices(
 
     df = raw_df.copy()
 
+    # HUD VL is NYISO's Hudson Valley Zone G identifier in these extracts.
     df = df.loc[
         df["Name"].eq("HUD VL"),
         [
@@ -227,6 +249,7 @@ def clean_nyiso_prices(
     df["timestamp_utc"] = timestamp_utc
     df["timestamp_local"] = timestamp_local
 
+    # Keep LBMP components for auditability, not as same-hour predictors.
     df = df.rename(
         columns={
             "Name": "location",
@@ -265,6 +288,7 @@ def clean_nyiso_load(
 
     df = raw_df.copy()
 
+    # Restrict the load extract to the same Hudson Valley zone as the price.
     df = df.loc[
         df["Name"].eq("HUD VL"),
         [
@@ -298,16 +322,15 @@ def clean_nyiso_load(
 
     return ensure_chronological_order(df)
 
-   
-
-
 def fahrenheit_to_celsius(values: pd.Series) -> pd.Series:
+    """Convert temperatures from degrees Fahrenheit to degrees Celsius."""
     return (values - 32.0) * (5.0 / 9.0)
 
 
 def miles_per_hour_to_meters_per_second(
     values: pd.Series,
 ) -> pd.Series:
+    """Convert wind speed from miles per hour to meters per second."""
     return values * 0.44704
 
 
@@ -334,6 +357,8 @@ def clean_noaa_weather(
 
     df = raw_df.copy()
 
+    # Filter before aggregation so each hourly value is based on comparable
+    # routine observations only.
     df = df.loc[df["REPORT_TYPE"].isin(VALID_REPORT_TYPES)].copy()
 
     df["observation_local"] = pd.to_datetime(
@@ -351,6 +376,8 @@ def clean_noaa_weather(
     for column in numeric_columns:
         df[column] = pd.to_numeric(df[column], errors="coerce")
 
+    # NOAA observations may occur within the hour; floor them before taking
+    # one mean per local hour.
     df["timestamp_local"] = df["observation_local"].dt.floor("h")
 
     hourly = (
@@ -375,6 +402,8 @@ def clean_noaa_weather(
         )
     )
 
+    # Convert the aggregated local hour to an aware timestamp before creating
+    # the UTC join key, including daylight-saving-time transitions.
     hourly["timestamp_local"] = (
         hourly["timestamp_local"]
         .dt.tz_localize(
@@ -441,6 +470,8 @@ def merge_market_data(
         ]
     ]
 
+    # UTC prevents accidental joins between matching clock times that refer to
+    # different instants.  one_to_one makes duplicate source hours fail fast.
     result = prices.merge(
         load_columns,
         on="timestamp_utc",
