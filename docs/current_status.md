@@ -30,72 +30,63 @@ Actual load and same-hour observed weather are provisional predictors because th
 - Corrected indentation and nested-function errors in `data_processing.py`.
 - Confirmed that `data_processing.py` compiles successfully with `py_compile`.
 
+### NYISO leakage-control update
+
+- Recreated the project `.venv` with Python 3.12 and registered the
+  `Python 3.12 (electricity-forecasting)` Jupyter kernel.
+- Completed Steps 1–5 in `notebooks/04_feature_engineering.ipynb` for the
+  January 2025 NYISO Hudson Valley load forecasts.
+- Built `nyiso_hudson_valley_load_forecast_vintages.csv` with 4,464 forecast
+  vintage rows covering 744 unique target hours.
+- Applied a prediction cutoff of 5:00 a.m. America/New_York on the calendar
+  day before delivery.
+- Selected exactly one latest eligible load-forecast vintage for each of the
+  744 target hours; post-cutoff vintages are excluded.
+- Completed Step 6: merged the selected forecasts one-to-one with the 744-row
+  NYISO electricity table, preserving cutoff and source-provenance fields.
+- Verified the project test suite: 3 tests passed. Ruff checks passed for
+  `src` and `tests`.
+- Classified NYISO model columns in `notebooks/04_feature_engineering.ipynb`:
+  `day_ahead_price_usd_mwh` is the target, `load_forecast_mw` is the sole
+  approved load-based candidate predictor, forecast-vintage timing and
+  provenance fields are audit-only, and same-hour actual load, observed weather,
+  and target components are excluded from operational predictors.
+- Completed Step 7: defined the target, candidate-predictor, forecast-audit,
+  identifier, and excluded-operational column groups.
+- Added and passed assertions that every grouped column exists, groups contain
+  no duplicate names, groups do not overlap, and no target, audit, or excluded
+  field is selected as an operational predictor.
+- Preserved the NYISO availability-proxy warning: all 744 January rows use
+  `availability_basis="zip_entry_last_modified"` and
+  `availability_is_proxy=True`.
+- Verified 744 unique January 2025 target hours with nonmissing target prices.
+- Executed the saved notebook from a fresh Python 3.12 process through Step 7,
+  stopping before the calendar-feature cells; all Steps 4–7 assertions passed.
+
 ## Current issue
 
-- Complete the final validation of all imports and run Notebook 2 from top to bottom.
-- Confirm the processed PJM and NYISO exports each contain 744 hourly rows.
-- Confirm weather columns merge correctly and document remaining missing values.
+The January 2025 NYISO load forecast uses the archived ZIP entry's
+last-modified time as a proxy for the original forecast-availability time.
+This is documented with `availability_is_proxy=True` and must be revisited
+before using the approach for the planned 2020–2024 study period.
 
 ## Next task
 
-Run:
-
-```powershell
-python -m ruff check src\electricity_forecasting\data_processing.py
-python -m pytest -v
-## Important files
-
-Repository files:
-
-* `AGENTS.md`
-* `notebooks/01_data_inventory.ipynb`
-* `notebooks/02_data_cleaning.ipynb`
-* `data/processed/pjm_pseg_january_2025_electricity.csv`
-* `data/processed/nyiso_hudson_valley_january_2025_electricity.csv`
-* `docs/textbook_notes/`
-
-Source datasets include:
-
-* PJM day-ahead hourly LMP
-* PJM PS metered load
-* NYISO Hudson Valley day-ahead LMP
-* NYISO Hudson Valley integrated load
-* January 2025 Newark weather
-* January 2025 Stewart weather
-* DATA 698 syllabus
-
-The two processed CSVs are already committed and pushed. The last known working tree also contained modified notebooks and possibly `AGENTS.md`, plus untracked `docs/textbook_notes/`. Do not assume these remaining changes have been committed; inspect `git status` first. Do not discard or overwrite any existing work.
+Continue `notebooks/04_feature_engineering.ipynb` by deriving and validating
+leakage-safe calendar features from `timestamp_local`.
 
 ## Exact Next Task
 
-Complete and validate:
+In `notebooks/04_feature_engineering.ipynb`, review the existing calendar
+feature cells after the completed model-column classification:
 
-`notebooks/03_exploratory_data_analysis.ipynb`
+1. Confirm their explanation states why calendar values are known at the
+   day-ahead forecast cutoff.
+2. Run the cells from a fresh Python 3.12 kernel to derive `hour_of_day`,
+   `day_of_week`, and `is_weekend` from timezone-aware `timestamp_local`.
+3. Confirm that only these calendar fields are appended to
+   `candidate_feature_columns`.
+4. Verify their valid ranges and nonmissingness.
 
-Use only the two committed January 2025 electricity files under `data/processed/`.
-
-The notebook must:
-
-1. Load both processed CSVs using repository-relative paths.
-2. Confirm 744 rows and 744 unique hourly timestamps per market.
-3. Confirm there are no missing price or load values.
-4. Display column names, data types, and timestamp ranges.
-5. Produce descriptive statistics for price and load.
-6. Plot hourly price and load time series for both markets.
-7. Compare price distributions.
-8. Analyze prices by hour of day and day of week.
-9. Calculate price-load correlations separately for each market, clearly labeling actual load as provisional.
-10. Identify negative-price and unusually high-price hours without deleting, replacing, or winsorizing them.
-11. Write a concise summary of the findings and the limitations of using only January 2025.
-12. Restart the kernel and run the notebook from top to bottom, resolving all errors before completion.
-
-Do not:
-
-- Merge weather data.
-- Begin final model training.
-- Download or process the full historical period as part of this task.
-- Treat actual load as an approved final predictor.
-- Finalize the predictor set before resolving forecast-availability questions.
-- Modify `01_data_inventory.ipynb` or `02_data_cleaning.ipynb` unless correcting a reproducibility defect.
-
-After validation, commit and push the completed Notebook 03 deliberately.
+Do not create a final modeling CSV, add same-hour actual load or observed
+weather as predictors, or begin model training.
