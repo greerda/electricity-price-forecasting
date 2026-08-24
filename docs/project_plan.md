@@ -1,14 +1,14 @@
 # Electricity Price Forecasting Capstone — Project Plan
 
-**Last updated:** August 4, 2026  
-**Current phase:** January 2025 feasibility analysis and preliminary EDA  
-**Current task:** Complete and validate `notebooks/03_exploratory_data_analysis.ipynb`
+**Last updated:** August 24, 2026  
+**Current phase:** January 2025 pre-modeling completion gate  
+**Current task:** Task 1 of 7 — validate calendar features in `notebooks/04_feature_engineering.ipynb`
 
 ## How to Use This Document
 
 This file is the authoritative academic and technical roadmap for the capstone. It records the project scope, methodological decisions, milestones, risks, schedule, and completion criteria.
 
-- Use `CURRENT_STATUS.md` for the short, frequently updated handoff.
+- Use `docs/current_status.md` for the short, frequently updated handoff.
 - Use `AGENTS.md` for instructions that govern coding-agent behavior in the repository.
 - Use this file when a milestone, project decision, dependency, or scope item changes.
 
@@ -20,6 +20,22 @@ This file is the authoritative academic and technical roadmap for the capstone. 
 | Data and methods | 6–13 | Sources, feasibility results, predictors, models, features, and evaluation |
 | Execution | 14–18 | Completed work, current milestone, dependencies, risks, and schedule |
 | Delivery and governance | 19–25 | Literature, reproducibility, next tasks, completion criteria, status, and dashboard |
+
+## Authoritative pre-modeling completion gate — Tasks 1–7
+
+Complete these tasks in order. Do not begin model fitting until all seven gates pass.
+
+1. **Validate calendar features in Notebook 04.** From a fresh Python 3.12 kernel, run through the existing feature-role classification and derive `hour_of_day`, `day_of_week`, and `is_weekend` from timezone-aware `timestamp_local`. Prove valid ranges, types, nonmissingness, and candidate-list membership.
+2. **Reconcile the notebook and reusable preprocessing paths.** Make `src/electricity_forecasting/data_processing.py` and configuration use the committed schema (`day_ahead_price_usd_mwh` and `actual_load_mw`), the same NOAA SI-unit interpretation, the same hourly-report selection rule, and the same quality/rejection flags as Notebook 02.
+3. **Implement forecast-origin-aware historical features.** Replace assumptions based only on row position with explicit availability checks relative to each market cutoff. Add price lags and shifted rolling statistics only after tests prove that every source value was knowable at prediction time.
+4. **Complete the comparable PJM feature path.** Use the provisional PJM cutoff of D−1 11:00 America/New_York until authoritative evidence changes it. Exclude same-hour metered load and observed weather. Produce a minimum common feature set for both markets; retain the NYISO load-forecast feature as an explicitly augmented feature until a comparable PJM forecast series is available.
+5. **Expand automated validation.** Populate the empty preprocessing and validation test files. Test schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection, tie failure, prohibited-column exclusion, row counts, and absence of future information. Require `pytest` and Ruff to pass.
+6. **Complete and validate Notebook 03 EDA.** Use `notebooks/03_exploratory_analysis.ipynb` and the two committed January processed tables. Keep actual load and observed weather descriptive only, preserve negative and high prices, distinguish feasibility findings from final conclusions, and run from a fresh kernel.
+7. **Create the pre-modeling checkpoint.** Export one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles. Require 744 unique target hours, nonmissing targets, no prohibited predictors, successful fresh-process notebook runs, passing tests/Ruff, updated documentation, and a deliberate Git commit.
+
+**Exit condition:** after Task 7, the January feasibility pipeline is ready for baseline-model development. January 2025 remains a feasibility sample; it is not the final 2020–2024 evidence base.
+
+---
 
 ## 1. Project Overview
 
@@ -163,7 +179,10 @@ Raw source files must remain unchanged under `data/raw/`.
 notebooks/
 ├── 01_data_inventory.ipynb
 ├── 02_data_cleaning.ipynb
-└── 03_exploratory_data_analysis.ipynb
+├── 03_exploratory_analysis.ipynb
+├── 04_feature_engineering.ipynb
+├── 05_baseline_models.ipynb
+└── 06_model_comparison.ipynb
 ```
 
 ### 7.2 Processed January Files
@@ -413,7 +432,7 @@ The same evaluation definitions and test periods will be used wherever possible 
 - [x] Exported the two processed electricity datasets.
 - [x] Updated `.gitignore` to permit the intended processed CSV files.
 - [x] Committed and pushed the processed January datasets.
-- [x] Created `notebooks/03_exploratory_data_analysis.ipynb`.
+- [x] Created `notebooks/03_exploratory_analysis.ipynb`.
 - [x] Prepared detailed historical-data questions for PJM.
 - [ ] Receive and document responses from PJM and NYISO.
 - [ ] Finalize the prediction cutoff.
@@ -426,12 +445,12 @@ The same evaluation definitions and test periods will be used wherever possible 
 
 ---
 
-## 15. Current Milestone — January Exploratory Data Analysis
+## 15. Task 6 Milestone: January 2025 EDA
 
 Notebook:
 
 ```text
-notebooks/03_exploratory_data_analysis.ipynb
+notebooks/03_exploratory_analysis.ipynb
 ```
 
 The notebook has been created. The next step is to complete and validate its contents.
@@ -620,29 +639,17 @@ Every source used in the final paper must be recorded with sufficient informatio
 
 ## 21. Immediate Next Task
 
-Complete and validate:
+Complete Task 1 only in `notebooks/04_feature_engineering.ipynb`:
 
-```text
-notebooks/03_exploratory_data_analysis.ipynb
-```
+1. Restart with the Python 3.12 project kernel.
+2. Run from the top through Step 7.
+3. Derive `hour_of_day`, `day_of_week`, and `is_weekend` from timezone-aware `timestamp_local`.
+4. Prove ranges, Boolean logic, nonmissingness, and candidate-list membership.
+5. Rerun the feature-role overlap and prohibited-predictor assertions.
+6. Run `pytest` and `ruff check src tests`.
+7. Record the evidence in `docs/current_status.md` and `docs/learning_log.md`.
 
-Use only:
-
-```text
-data/processed/pjm_pseg_january_2025_electricity.csv
-data/processed/nyiso_hudson_valley_january_2025_electricity.csv
-```
-
-The milestone is complete only when:
-
-1. All required EDA checks, tables, and charts are present.
-2. Negative and high-price observations remain unaltered.
-3. Actual load is labeled as provisional.
-4. The written interpretation distinguishes feasibility findings from final research conclusions.
-5. The notebook runs without errors after restarting the kernel.
-6. The completed notebook is deliberately committed and pushed to Git.
-
-Do not merge weather, download the full five-year period, or begin final model training as part of this immediate task.
+Do not create modeling-ready CSV files or train models during Task 1.
 
 ---
 
@@ -696,15 +703,17 @@ The project will be considered complete when:
 
 ## 24. Project Status Summary
 
-**Current phase:** January 2025 feasibility analysis and preliminary EDA.
+**Current phase:** January 2025 pre-modeling completion gate.
 
-**Completed milestone:** January electricity-data inventory, cleaning, validation, export, and Git tracking.
+**Verified checkpoint:** Notebook 02 has two 744-row processed electricity tables and a 4,464-row NYISO forecast-vintage table. Notebook 04 Steps 1–7 are complete, including latest-eligible NYISO vintage selection, one-to-one merge, column-role classification, and leakage safeguards.
 
-**Current working notebook:** `notebooks/03_exploratory_data_analysis.ipynb`.
+**Current working notebook:** `notebooks/04_feature_engineering.ipynb`.
 
-**Primary dependency:** Responses or authoritative documentation from PJM and NYISO concerning historical forecasts, forecast issuance timestamps, prediction cutoffs, identifiers, and daylight-saving conventions.
+**Exact next task:** Task 1 — fresh-kernel calendar-feature validation.
 
-**Next deliverable:** A fully executed and validated January EDA notebook containing descriptive statistics, visualizations, price-pattern analysis, price-load correlations, extreme-price tables, and a concise findings-and-limitations summary.
+**Primary limitations:** NYISO availability uses a ZIP timestamp proxy; preprocessing modules and notebook policy must be reconciled; PJM lacks a verified comparable load-forecast vintage series; forecast-origin-aware lags are not yet complete.
+
+**Pre-modeling exit:** all seven authoritative tasks pass, January modeling-ready tables are validated, notebooks run fresh, tests/Ruff pass, and documentation matches the implementation.
 
 ---
 

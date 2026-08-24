@@ -11,6 +11,18 @@ The project must be achievable within the DATA 698 capstone schedule,
 academically defensible, reproducible, and suitable for presentation to
 professors and prospective employers.
 
+# Current execution checkpoint
+
+The project is at the January 2025 pre-modeling completion gate. The authoritative remaining work is Tasks 1–7 in `docs/current_status.md` and `docs/project_plan.md`.
+
+- Work on one numbered task at a time.
+- The exact next task is Task 1: fresh-kernel validation of `hour_of_day`, `day_of_week`, and `is_weekend` in `notebooks/04_feature_engineering.ipynb`.
+- Do not create modeling-ready exports until Task 7.
+- Do not train or compare models until all seven tasks pass.
+- Preserve the NYISO availability-proxy warning.
+- Proceed without waiting for outside replies by using conservative, configurable, explicitly provisional assumptions.
+- After each task, show the student the code purpose, a C#/LINQ/SQL analogy where useful, verification evidence, and a small reproduction exercise.
+
 # Working research question
 
 How accurately can statistical and machine-learning models forecast
@@ -250,8 +262,15 @@ Before using a predictor, document:
   revision; and
 - whether it would have been known at the forecast cutoff.
 
-Do not finalize the forecast cutoff until PJM and NYISO publication and
-market-timing rules have been verified.
+Use configurable provisional cutoffs while authoritative evidence is incomplete:
+
+- NYISO: D−1 05:00 America/New_York;
+- PJM: D−1 11:00 America/New_York.
+
+Treat these as conservative, testable project assumptions rather than verified
+market facts. Do not block progress on unanswered correspondence. Preserve the
+NYISO ZIP-entry availability proxy flag and replace an assumption only when a
+traceable authoritative source supports the change.
 
 If availability cannot be established, exclude the predictor from the
 primary model or clearly label the analysis as an explanatory or
@@ -629,13 +648,13 @@ Avoid unnecessary scope expansion.
 
 When completing a substantial project task:
 
-- Update `docs/CURRENT_STATUS.md` with completed work, validation results,
+- Update `docs/current_status.md` with completed work, validation results,
   unresolved issues, and the exact next task.
-- Update `docs/DECISIONS.md` when a methodological or architectural decision
+- Update `docs/decisions.md` when a methodological or architectural decision
   is made.
-- Update `docs/DATA_DICTIONARY.md` when datasets, fields, units, time zones,
+- Update `docs/data_dictionary.md` when datasets, fields, units, time zones,
   transformations, or derived features change.
-- Update `docs/PROJECT_PLAN.md` only when the project scope, schedule,
+- Update `docs/project_plan.md` only when the project scope, schedule,
   milestones, or deliverables change.
 - Do not modify documentation merely to restate unchanged information.
 - Include relevant documentation updates in the same Git commit as the
