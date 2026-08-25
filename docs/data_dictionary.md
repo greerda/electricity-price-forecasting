@@ -76,3 +76,144 @@ Every column must belong to exactly one documented group:
 - **excluded operational fields:** actual target-hour values, observed weather, target components, and quality/audit columns not intended for fitting.
 
 Task 7 must assert that groups exist, contain no duplicate names, do not overlap, and place no target, identifier, audit, or excluded field in the candidate list.
+
+**Last updated:** August 21, 2026
+
+This dictionary documents raw source fields, processed fields, feature roles, units, time conventions, and audit fields used by the PJM PSEG and NYISO Hudson Valley electricity-price forecasting pipelines.
+
+## Naming and role conventions
+
+| Concept | Preferred processed name | Role |
+|---|---|---|
+| Hourly day-ahead price | `day_ahead_price_usd_mwh` | Prediction target |
+| Actual or integrated load | `load_mw` | EDA or safely lagged feature only; excluded at the target hour |
+| Selected historical load forecast | `load_forecast_mw` | Candidate predictor subject to market-specific availability rules |
+| Canonical target timestamp | `timestamp_utc` | Join, ordering, validation, split, and modeling key |
+| Market-local target timestamp | `timestamp_local` | Calendar features, market cutoffs, interpretation, and reporting |
+
+If an existing processed file uses `day_ahead_lmp`, treat it as an earlier alias of `day_ahead_price_usd_mwh`. Before final modeling, use one canonical name consistently in notebooks, source code, tests, exported data, and documentation.
+
+## Common processed electricity fields
+
+| Column | Type | Unit/timezone | Description | Role and rule |
+|---|---|---|---|---|
+| `timestamp_utc` | timezone-aware datetime | UTC | Canonical target delivery-hour timestamp | Required unique key for joins and modeling |
+| `timestamp_local` | timezone-aware datetime | `America/New_York` | PJM or NYISO local target delivery hour | Calendar and cutoff construction; retain UTC as the unique key |
+| `day_ahead_price_usd_mwh` | numeric | `$/MWh` | Complete hourly day-ahead zonal price | Prediction target |
+| `load_mw` | numeric | MW | Actual, metered, or integrated hourly load | EDA/audit; same-hour value excluded from the operational model |
+| `market` | string | — | Market identifier, such as `PJM` or `NYISO` | Provenance and grouped reporting |
+| `location_name` | string | — | PSEG or HUD VL | Provenance and validation |
+| `location_id` | string/integer | — | PJM pnode `51301` or NYISO PTID `61758` | Historical identity validation |
+
+## PJM source-to-processed mapping
+
+| Processed concept | PJM source field | Source type | Unit | Notes |
+|---|---|---|---|---|
+| Target UTC hour | `datetime_beginning_utc` | datetime | UTC | Preferred source for the canonical key |
+| Target local hour | `datetime_beginning_ept` | datetime | Eastern Prevailing Time | Local interpretation; test DST transitions |
+| Location identifier | `pnode_id` | integer | — | Expected value `51301` |
+| Location name | `pnode_name` | string | — | Expected value `PSEG` |
+| Location type | `type` | string | — | Expected value `ZONE` |
+| Day-ahead price target | `total_lmp_da` | numeric | `$/MWh` | Complete LMP; do not add component columns to it again |
+| Energy component | `system_energy_price_da` | numeric | `$/MWh` | Audit/explanation only unless explicitly modeled |
+| Congestion component | `congestion_price_da` | numeric | `$/MWh` | Audit/explanation only unless explicitly modeled |
+| Marginal-loss component | `marginal_loss_price_da` | numeric | `$/MWh` | Audit/explanation only unless explicitly modeled |
+| Current-row indicator | `row_is_current` | boolean/string | — | Retain for revision validation |
+| Version | `version_nbr` | integer | — | Retain for revision validation |
+| Actual-load zone | `zone` | string | — | Expected `PS` |
+| Actual-load area | `load_area` | string | — | Expected `PS` |
+| Actual load | `mw` | numeric | MW | Same-hour value is not an operational predictor |
+| Load verification | `is_verified` | boolean/string | — | Retain for historical-quality audit |
+
+## NYISO source-to-processed mapping
+
+| Processed concept | NYISO source field | Source type | Unit | Notes |
+|---|---|---|---|---|
+| Target local hour | `Time Stamp` | datetime | NYISO local market time | Convert to timezone-aware local and UTC fields |
+| Source timezone label | `Time Zone` | string | Eastern market label | Present in the load file; validate across DST transitions |
+| Location name | `Name` | string | — | Expected `HUD VL` |
+| Location identifier | `PTID` | integer | — | Expected `61758` |
+| Day-ahead price target | `LBMP ($/MWHr)` | numeric | `$/MWh` | Complete NYISO zonal day-ahead LBMP |
+| Marginal-loss component | `Marginal Cost Losses ($/MWHr)` | numeric | `$/MWh` | Audit/explanation |
+| Congestion component | `Marginal Cost Congestion ($/MWHr)` | numeric | `$/MWh` | Audit/explanation |
+| Actual integrated load | `Integrated Load` | numeric | MW | Same-hour value is not an operational predictor |
+| Raw-source provenance | `source_file` | string | — | Preserve input filename |
+
+## NOAA raw and processed weather mapping
+
+| Processed column | NOAA source column | Type | Unit/timezone | Description and rule |
+|---|---|---|---|---|
+| `weather_station` | `STATION` | string | — | GHCN station identifier; Newark `USW00014734`, Stewart `USW00014714` |
+| `weather_observed_at_local_standard` | `DATE` | naive source datetime | Fixed Local Standard Time, UTC−05:00 | Raw LCDv2 observation time; do not initially localize as `America/New_York` |
+| `weather_timestamp_utc` | derived from `DATE` | timezone-aware datetime | UTC | Canonical weather timestamp after fixed-standard-time localization |
+| `report_type` | `REPORT_TYPE` | string | — | Primary `FM-15`; `FM-16` fallback; exclude `FM-12`, `SOD`, and `SOM` from the primary series |
+| `weather_source_code` | `SOURCE` | string | — | NOAA observation-source code |
+| `temperature_c` | `HourlyDryBulbTemperature` | numeric after flag parsing | °C | Already metric; preserve raw text and QC indicators before conversion |
+| `dew_point_c` | `HourlyDewPointTemperature` | numeric after flag parsing | °C | Already metric; apply plausibility and dew-point/temperature checks |
+| `relative_humidity_pct` | `HourlyRelativeHumidity` | numeric after flag parsing | % | Valid physical range is 0–100% |
+| `wind_speed_mps` | `HourlyWindSpeed` | numeric after flag parsing | m/s | Already metric; reject physically implausible parsed values |
+| `wind_gust_mps` | `HourlyWindGustSpeed` | numeric after flag parsing | m/s | Optional; preserve missing and flagged states |
+| `precipitation_mm` | `HourlyPrecipitation` | numeric/indicator | mm | Blank is missing, `0` is measured no precipitation, and trace must remain distinct |
+| `present_weather_type` | `HourlyPresentWeatherType` | string | — | Optional descriptive/audit field |
+| `weather_rem_raw` | `REM` | string | — | Original METAR and remarks used to audit questionable parsed observations |
+| `weather_qc_flag` | derived | string/category | — | Consolidated quality, suspect, erroneous, and physical-validation status |
+| `weather_value_rejected` | derived | boolean | — | True when a source value is converted to missing because it fails validation |
+
+## Selected load-forecast fields
+
+| Column | Type | Unit/timezone | Description | Role and limitation |
+|---|---|---|---|---|
+| `load_forecast_mw` | numeric | MW | Latest forecast value eligible at the market cutoff | Candidate predictor |
+| `forecast_target_at_utc` | timezone-aware datetime | UTC | Future operating hour being forecast | Join and audit key |
+| `forecast_available_at_utc` | timezone-aware datetime | UTC | Availability or evaluated time used for cutoff filtering | Audit-only; may be a proxy for NYISO |
+| `forecast_available_at` | timezone-aware datetime | `America/New_York` | Local representation of forecast availability | Audit-only |
+| `prediction_cutoff_utc` | timezone-aware datetime | UTC | Market-specific cutoff converted to UTC | Audit-only and eligibility validation |
+| `prediction_cutoff` | timezone-aware datetime | `America/New_York` | NYISO 5:00 a.m. or PJM 11:00 a.m. on the day before delivery | Audit-only |
+| `hours_before_cutoff` | numeric | hours | `prediction_cutoff - forecast_available_at` | Must be strictly positive under the conservative rule |
+| `forecast_horizon_hours` | numeric | hours | Target delivery time minus forecast availability time | Audit-only |
+| `forecast_area` | string | — | `HUD VL`, `MIDATL`, or other documented forecast area | Provenance; MIDATL is not PSEG-specific |
+| `source_archive` | string | — | Archive name containing the selected forecast | Audit-only provenance |
+| `source_file` | string | — | Forecast file or entry used for the target hour | Audit-only provenance |
+| `availability_basis` | string | — | How availability was determined | Currently `zip_entry_last_modified` for the NYISO pilot |
+| `availability_is_proxy` | boolean | — | Whether availability is estimated rather than authoritative | Must be `False` or explicitly accepted before final operational use |
+| `forecast_snapshot_frequency` | string/numeric | — | Retained snapshot interval | PJM historical feed preserves six-hour snapshots, not every live revision |
+
+## Interim and processed dataset grains
+
+| Dataset | Grain | Expected uniqueness | Description |
+|---|---|---|---|
+| `data/processed/pjm_pseg_january_2025_electricity.csv` | One row per PJM target delivery hour | `timestamp_utc` unique | January feasibility electricity table |
+| `data/processed/nyiso_hudson_valley_january_2025_electricity.csv` | One row per NYISO target delivery hour | `timestamp_utc` unique | January feasibility electricity table |
+| `data/interim/nyiso_hudson_valley_load_forecast_vintages.csv` | One row per forecast-vintage/target-hour pair | Forecast availability plus target hour unique | Contains multiple vintages for each target hour; currently 4,464 rows and 744 target hours |
+| Selected NYISO forecast table | One selected row per target hour | Target hour unique | Latest eligible vintage strictly before the 5:00 a.m. cutoff |
+| Future selected PJM forecast table | One selected row per target hour | Target hour unique | Latest MIDATL snapshot strictly before the 11:00 a.m. cutoff |
+
+## Feature-role classification
+
+| Role | Included fields or examples | Modeling rule |
+|---|---|---|
+| Target | `day_ahead_price_usd_mwh` | Never included in predictors for the same target hour |
+| Approved predictors | Calendar variables; leakage-safe price lags | Must be available at the forecast origin |
+| Conditional predictors | NYISO `load_forecast_mw`; future PJM MIDATL forecast; archived weather forecast | Require verified vintage/availability timing |
+| Audit-only fields | Cutoffs, availability timestamps, lead time, proxy indicator, archives, source files, revision/version fields | Preserve for validation; exclude from the model unless explicitly justified |
+| Excluded target-period fields | Same-hour actual load; same-hour observed weather; future prices | Do not use in the operational model |
+| EDA-only fields | Same-hour actual load and observed weather when clearly labeled | May explain relationships but cannot support deployment claims |
+
+## Missing-value and quality rules
+
+- Do not use blanket `fillna(0)`.
+- Do not backward-fill time-series values.
+- Preserve the distinction among missing, zero, trace, suspect, erroneous, and physically rejected observations.
+- Fit imputation only on training data.
+- Retain source values or raw text needed to reproduce rejection decisions.
+- Record every imputation method, maximum gap, and feature affected.
+
+## Future dictionary actions
+
+- Verify the exact processed column names by comparing this dictionary with the outputs of `02_data_cleaning.ipynb` and `04_feature_engineering.ipynb`.
+- Resolve the `day_ahead_lmp` versus `day_ahead_price_usd_mwh` naming difference before exporting a final modeling table.
+- Add the exact PJM historical forecast columns after the first `load_frcstd_hist` download.
+- Add any authoritative NYISO forecast issuance/publication field when identified.
+- Add DST-fold or repeated-hour audit fields if Technical Bulletin TB-064 requires them.
+- Add feature definitions, lags, and windows when `feature_engineering.py` is finalized.
+- Version this dictionary whenever a processed schema changes.

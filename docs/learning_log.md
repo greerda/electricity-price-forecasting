@@ -1,4 +1,4 @@
-# Learning Log
+## Learning Log
 
 This file records what the student can now explain and reproduce, not merely what an agent changed.
 
@@ -74,3 +74,36 @@ What is still assumed, provisional, or unresolved?
 
 **Next single action:**  
 Name one concrete task and its completion check.
+
+## 2026-08-21 — External responses and forecast timing
+
+### Work completed
+
+- Reviewed the PJM, NYISO, and NOAA responses.
+- Updated the project documentation.
+- Identified the remaining NYISO forecast-availability questions.
+
+### What I learned
+
+- PJM preserves six-hour historical MIDATL load-forecast snapshots.
+- NYISO’s Day-Ahead Market closes at 5:00 a.m. EPT.
+- A forecast covering the correct target hour is not safe unless it was also available before the market cutoff.
+- ZIP-entry modification time is not automatically proof of public availability.
+
+### Decision or consequence
+
+- Treat NYISO `load_forecast_mw` as conditionally approved for the January pilot.
+- Do not use it in the final operational model until its publication time is verified.
+- Send a focused follow-up inquiry to NYISO.
+
+### Files or work affected
+
+- `notebooks/04_feature_engineering.ipynb`
+- `docs/methodology_decisions.md`
+- `docs/data_source_register.md`
+- `PROJECT_PLAN.md`
+
+### Next step
+
+- Complete the feature-role classification in Notebook 04 while waiting for NYISO’s response.
+

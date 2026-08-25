@@ -38,6 +38,10 @@ reports/_freeze/
 reports/capstone.html
 reports/capstone.pdf
 
+# Generated files
+docs/decisions.html
+docs/decisions_files/
+
 # Copyrighted reference materials kept locally
 docs/references_local/
 

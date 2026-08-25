@@ -17,3 +17,32 @@ Detailed reasoning lives in `docs/methodology_decisions.md`. This table is the d
 | D-011 | 2026-08-24 | Complete the seven pre-modeling tasks before baseline model development. | Active |
 
 When a decision changes, add a new row that identifies the replaced decision rather than silently rewriting the historical rationale.
+
+# Methodological decisions
+
+## NYISO January 2025 load-forecast cutoff and vintage selection
+
+For the January 2025 NYISO Hudson Valley feasibility sample, the day-ahead
+prediction cutoff is defined as 5:00 a.m. America/New_York on the calendar day
+before the target delivery date.
+
+For each target hour, retain forecast vintages only when:
+
+`forecast_available_at <= prediction_cutoff`
+
+Select the eligible vintage with the latest `forecast_available_at`. Require
+exactly one selected vintage per target hour; a tie at the latest eligible
+availability timestamp is treated as a data-quality error.
+
+`forecast_available_at` is derived from the archived ZIP entry's recorded
+last-modified timestamp. It is therefore a proxy for original NYISO forecast
+availability and is retained with `availability_is_proxy=True` and
+`availability_basis="zip_entry_last_modified"`.
+
+Use `load_forecast_mw` as the currently approved NYISO load-based candidate
+predictor. Exclude same-hour actual load and forecasts available after the
+cutoff from model inputs. Retain forecast timing and source-provenance fields
+for auditability rather than as model features.
+
+This decision applies to the January 2025 feasibility sample and must be
+reassessed before extending the analysis to the planned 2020–2024 study period.

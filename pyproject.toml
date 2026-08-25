@@ -17,12 +17,15 @@ dependencies = [
     "ipykernel",
     "jupyter",
     "nbconvert",
+
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
     "ruff",
+    "jupytext",
+    "code2flow",
 ]
 
 [tool.setuptools]
