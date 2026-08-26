@@ -9,11 +9,30 @@ from electricity_forecasting.config import MARKET_TIMEZONE
 # These NOAA report types represent routine hourly observations.  Excluding
 # other report types avoids mixing in observations with different reporting
 # purposes or timing.
+
 VALID_REPORT_TYPES = {
-    "FM-12",
-    "FM-15",
-    "FM-16",
+    "FM-12",  # SYNOP surface observation from a fixed land station
+    "FM-15",  # routine METAR aviation weather report
+    "FM-16",  # SPECI special aviation weather report, issued for significant changing conditions
 }
+
+REPORT_TYPE_PRIORITY = {
+    "FM-15": 1,
+    "FM-12": 2,
+    "FM-16": 3,
+}
+
+WEATHER_SOURCE_COLUMNS = {
+    "HourlyDryBulbTemperature": "temperature_c",
+    "HourlyDewPointTemperature": "dew_point_c",
+    "HourlyRelativeHumidity": "relative_humidity_pct",
+    "HourlyWindSpeed": "wind_speed_mps",
+}
+
+JANUARY_2025_HOURS = pd.date_range(
+    start="2025-01-01 00:00:00", end="2025-01-31 23:00:00", freq="h"
+)
+
 
 def ensure_chronological_order(
     df: pd.DataFrame,
@@ -50,13 +69,10 @@ def create_utc_and_local_timestamps(
     """
     # NYISO source timestamps are naive local Eastern clock times.  Localizing
     # before converting preserves the market-hour meaning across DST changes.
-    timestamp_local = (
-        pd.to_datetime(timestamp_series)
-        .dt.tz_localize(
-            MARKET_TIMEZONE,
-            ambiguous="infer",
-            nonexistent="shift_forward",
-        )
+    timestamp_local = pd.to_datetime(timestamp_series).dt.tz_localize(
+        MARKET_TIMEZONE,
+        ambiguous="infer",
+        nonexistent="shift_forward",
     )
 
     timestamp_utc = timestamp_local.dt.tz_convert("UTC")
@@ -76,15 +92,13 @@ def clean_pjm_prices(
         "total_lmp_da",
     }
 
-    #required_columns is a set of column names the function needs.
-    #raw_df.columns is the DataFrame’s actual column names.
-    #.difference(...) returns items in required_columns that are not in raw_df.columns
+    # required_columns is a set of column names the function needs.
+    # raw_df.columns is the DataFrame’s actual column names.
+    # .difference(...) returns items in required_columns that are not in raw_df.columns
     missing = required_columns.difference(raw_df.columns)
 
     if missing:
-        raise ValueError(
-            f"PJM price data is missing columns: {sorted(missing)}"
-        )
+        raise ValueError(f"PJM price data is missing columns: {sorted(missing)}")
 
     df = raw_df.copy()
 
@@ -111,16 +125,13 @@ def clean_pjm_prices(
 
     # Retain both source time representations so joins use an unambiguous UTC
     # key while local hour remains available for later calendar features.
-    df["timestamp_local"] = (
-        pd.to_datetime(
-            df["datetime_beginning_ept"],
-            format="%m/%d/%Y %I:%M:%S %p",
-        )
-        .dt.tz_localize(
-            MARKET_TIMEZONE,
-            ambiguous="infer",
-            nonexistent="shift_forward",
-        )
+    df["timestamp_local"] = pd.to_datetime(
+        df["datetime_beginning_ept"],
+        format="%m/%d/%Y %I:%M:%S %p",
+    ).dt.tz_localize(
+        MARKET_TIMEZONE,
+        ambiguous="infer",
+        nonexistent="shift_forward",
     )
 
     # Component prices are retained for reconciliation and auditing, but they
@@ -128,13 +139,13 @@ def clean_pjm_prices(
     df = df.rename(
         columns={
             "pnode_name": "location",
-            "total_lmp_da": "day_ahead_lmp",
+            "total_lmp_da": "day_ahead_price_usd_mwh",
         }
     )
 
     df["market"] = "PJM"
-    df["day_ahead_lmp"] = pd.to_numeric(
-        df["day_ahead_lmp"],
+    df["day_ahead_price_usd_mwh"] = pd.to_numeric(
+        df["day_ahead_price_usd_mwh"],
         errors="coerce",
     )
 
@@ -156,9 +167,7 @@ def clean_pjm_load(
     missing = required_columns.difference(raw_df.columns)
 
     if missing:
-        raise ValueError(
-            f"PJM load data is missing columns: {sorted(missing)}"
-        )
+        raise ValueError(f"PJM load data is missing columns: {sorted(missing)}")
 
     df = raw_df.copy()
 
@@ -180,28 +189,25 @@ def clean_pjm_load(
         utc=True,
     )
 
-    df["timestamp_local"] = (
-        pd.to_datetime(
-            df["datetime_beginning_ept"],
-            format="%m/%d/%Y %I:%M:%S %p",
-        )
-        .dt.tz_localize(
-            MARKET_TIMEZONE,
-            ambiguous="infer",
-            nonexistent="shift_forward",
-        )
+    df["timestamp_local"] = pd.to_datetime(
+        df["datetime_beginning_ept"],
+        format="%m/%d/%Y %I:%M:%S %p",
+    ).dt.tz_localize(
+        MARKET_TIMEZONE,
+        ambiguous="infer",
+        nonexistent="shift_forward",
     )
 
     df = df.rename(
         columns={
             "load_area": "location",
-            "mw": "load_mw",
+            "mw": "actual_load_mw",
         }
     )
 
     df["market"] = "PJM"
-    df["load_mw"] = pd.to_numeric(
-        df["load_mw"],
+    df["actual_load_mw"] = pd.to_numeric(
+        df["actual_load_mw"],
         errors="coerce",
     )
 
@@ -222,9 +228,7 @@ def clean_nyiso_prices(
     missing = required_columns.difference(raw_df.columns)
 
     if missing:
-        raise ValueError(
-            f"NYISO price data is missing columns: {sorted(missing)}"
-        )
+        raise ValueError(f"NYISO price data is missing columns: {sorted(missing)}")
 
     df = raw_df.copy()
 
@@ -240,11 +244,7 @@ def clean_nyiso_prices(
         ],
     ]
 
-    timestamp_utc, timestamp_local = (
-        create_utc_and_local_timestamps(
-            df["Time Stamp"]
-        )
-    )
+    timestamp_utc, timestamp_local = create_utc_and_local_timestamps(df["Time Stamp"])
 
     df["timestamp_utc"] = timestamp_utc
     df["timestamp_local"] = timestamp_local
@@ -253,15 +253,15 @@ def clean_nyiso_prices(
     df = df.rename(
         columns={
             "Name": "location",
-            "LBMP ($/MWHr)": "day_ahead_lmp",
+            "LBMP ($/MWHr)": "day_ahead_price_usd_mwh",
             "Marginal Cost Losses ($/MWHr)": "loss_price",
             "Marginal Cost Congestion ($/MWHr)": "congestion_price",
         }
     )
 
     df["market"] = "NYISO"
-    df["day_ahead_lmp"] = pd.to_numeric(
-        df["day_ahead_lmp"],
+    df["day_ahead_price_usd_mwh"] = pd.to_numeric(
+        df["day_ahead_price_usd_mwh"],
         errors="coerce",
     )
 
@@ -282,9 +282,7 @@ def clean_nyiso_load(
     missing = required_columns.difference(raw_df.columns)
 
     if missing:
-        raise ValueError(
-            f"NYISO load data is missing columns: {sorted(missing)}"
-        )
+        raise ValueError(f"NYISO load data is missing columns: {sorted(missing)}")
 
     df = raw_df.copy()
 
@@ -298,11 +296,7 @@ def clean_nyiso_load(
         ],
     ]
 
-    timestamp_utc, timestamp_local = (
-        create_utc_and_local_timestamps(
-            df["Time Stamp"]
-        )
-    )
+    timestamp_utc, timestamp_local = create_utc_and_local_timestamps(df["Time Stamp"])
 
     df["timestamp_utc"] = timestamp_utc
     df["timestamp_local"] = timestamp_local
@@ -310,28 +304,17 @@ def clean_nyiso_load(
     df = df.rename(
         columns={
             "Name": "location",
-            "Integrated Load": "load_mw",
+            "Integrated Load": "actual_load_mw",
         }
     )
 
     df["market"] = "NYISO"
-    df["load_mw"] = pd.to_numeric(
-        df["load_mw"],
+    df["actual_load_mw"] = pd.to_numeric(
+        df["actual_load_mw"],
         errors="coerce",
     )
 
     return ensure_chronological_order(df)
-
-def fahrenheit_to_celsius(values: pd.Series) -> pd.Series:
-    """Convert temperatures from degrees Fahrenheit to degrees Celsius."""
-    return (values - 32.0) * (5.0 / 9.0)
-
-
-def miles_per_hour_to_meters_per_second(
-    values: pd.Series,
-) -> pd.Series:
-    """Convert wind speed from miles per hour to meters per second."""
-    return values * 0.44704
 
 
 def clean_noaa_weather(
@@ -351,99 +334,119 @@ def clean_noaa_weather(
     missing = required_columns.difference(raw_df.columns)
 
     if missing:
-        raise ValueError(
-            f"NOAA weather data is missing columns: {sorted(missing)}"
-        )
+        raise ValueError(f"NOAA weather data is missing columns: {sorted(missing)}")
 
     df = raw_df.copy()
 
     # Filter before aggregation so each hourly value is based on comparable
     # routine observations only.
-    df = df.loc[df["REPORT_TYPE"].isin(VALID_REPORT_TYPES)].copy()
 
-    df["observation_local"] = pd.to_datetime(
-        df["DATE"],
-        errors="coerce",
+    # This ensures the function considers
+    # only valid report types from the January 2025 feasibility window.
+    df["observed_at"] = pd.to_datetime(df["DATE"], errors="coerce")
+
+    df = df.loc[
+        df["observed_at"].between(
+            "2025-01-01 00:00:00",
+            "2025-01-31 23:59:59",
+        )
+        & df["REPORT_TYPE"].isin(VALID_REPORT_TYPES)
+    ].copy()
+
+    # Preserve source text, extract a numeric value, and retain letter flags.
+
+    quality_flag_columns = []
+
+    for source_column, clean_column in WEATHER_SOURCE_COLUMNS.items():
+        raw_values = df[source_column].astype("string")
+        flag_column = f"{clean_column}_quality_flagged"
+
+        df[flag_column] = raw_values.notna() & raw_values.str.contains(
+            r"[A-Za-z]", regex=True, na=False
+        )
+        df[clean_column] = pd.to_numeric(
+            raw_values.str.extract(r"([-+]?\d*\.?\d+)", expand=False),
+            errors="coerce",
+        )
+        quality_flag_columns.append(flag_column)
+
+    # Reject implausible values while retaining an audit flag.
+
+    value_columns = list(WEATHER_SOURCE_COLUMNS.values())
+
+    df["weather_value_rejected"] = (
+        ~df["temperature_c"].between(-50, 50)
+        | ~df["dew_point_c"].between(-60, 40)
+        | ~df["relative_humidity_pct"].between(0, 100)
+        | ~df["wind_speed_mps"].between(0, 75)
     )
 
-    numeric_columns = [
-        "HourlyDryBulbTemperature",
-        "HourlyDewPointTemperature",
-        "HourlyRelativeHumidity",
-        "HourlyWindSpeed",
-    ]
+    df.loc[
+        df["weather_value_rejected"],
+        value_columns,
+    ] = pd.NA
 
-    for column in numeric_columns:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
+    df["weather_quality_flagged"] = df[quality_flag_columns].any(axis=1)
 
     # NOAA observations may occur within the hour; floor them before taking
     # one mean per local hour.
-    df["timestamp_local"] = df["observation_local"].dt.floor("h")
+    df["timestamp_local"] = df["observed_at"].dt.floor("h")
+
+    df["report_priority"] = df["REPORT_TYPE"].map(REPORT_TYPE_PRIORITY)
+
+    # Keep the preferred report per hour and retain missing January hours.
 
     hourly = (
-        df.groupby("timestamp_local", as_index=False)
-        .agg(
-            temperature_f=(
-                "HourlyDryBulbTemperature",
-                "mean",
-            ),
-            dew_point_f=(
-                "HourlyDewPointTemperature",
-                "mean",
-            ),
-            relative_humidity_pct=(
-                "HourlyRelativeHumidity",
-                "mean",
-            ),
-            wind_speed_mph=(
-                "HourlyWindSpeed",
-                "mean",
-            ),
+        df.sort_values(
+            [
+                "timestamp_local",
+                "report_priority",
+                "observed_at",
+            ]
         )
+        .drop_duplicates(
+            subset="timestamp_local",
+            keep="first",
+        )
+        .set_index("timestamp_local")
+        .reindex(JANUARY_2025_HOURS)
     )
+
+    hourly["weather_missing"] = hourly[value_columns].isna().any(axis=1)
+    hourly["weather_imputed"] = False
+    hourly["weather_station"] = station_code
+    hourly.index.name = "timestamp_local"
+    hourly = hourly.reset_index()
 
     # Convert the aggregated local hour to an aware timestamp before creating
     # the UTC join key, including daylight-saving-time transitions.
-    hourly["timestamp_local"] = (
-        hourly["timestamp_local"]
-        .dt.tz_localize(
-            MARKET_TIMEZONE,
-            ambiguous="infer",
-            nonexistent="shift_forward",
-        )
+    hourly["timestamp_local"] = hourly["timestamp_local"].dt.tz_localize(
+        MARKET_TIMEZONE,
+        ambiguous="infer",
+        nonexistent="shift_forward",
     )
 
-    hourly["timestamp_utc"] = (
-        hourly["timestamp_local"].dt.tz_convert("UTC")
-    )
-
-    hourly["temperature_c"] = fahrenheit_to_celsius(
-        hourly["temperature_f"]
-    )
-
-    hourly["dew_point_c"] = fahrenheit_to_celsius(
-        hourly["dew_point_f"]
-    )
-
-    hourly["wind_speed_mps"] = (
-        miles_per_hour_to_meters_per_second(
-            hourly["wind_speed_mph"]
-        )
-    )
-
+    hourly["timestamp_utc"] = hourly["timestamp_local"].dt.tz_convert("UTC")
     hourly["weather_station"] = station_code
 
     keep_columns = [
         "timestamp_utc",
         "timestamp_local",
+        "observed_at",
+        "REPORT_TYPE",
         "weather_station",
         "temperature_c",
         "dew_point_c",
         "relative_humidity_pct",
         "wind_speed_mps",
+        "weather_quality_flagged",
+        "weather_value_rejected",
+        "weather_missing",
+        "weather_imputed",
     ]
 
     return ensure_chronological_order(hourly[keep_columns])
+
 
 def merge_market_data(
     prices: pd.DataFrame,
@@ -455,7 +458,7 @@ def merge_market_data(
     load_columns = load[
         [
             "timestamp_utc",
-            "load_mw",
+            "actual_load_mw",
         ]
     ]
 
@@ -463,10 +466,16 @@ def merge_market_data(
         [
             "timestamp_utc",
             "weather_station",
+            "observed_at",
+            "REPORT_TYPE",
             "temperature_c",
             "dew_point_c",
             "relative_humidity_pct",
             "wind_speed_mps",
+            "weather_quality_flagged",
+            "weather_value_rejected",
+            "weather_missing",
+            "weather_imputed",
         ]
     ]
 

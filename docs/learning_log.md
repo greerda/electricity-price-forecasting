@@ -36,8 +36,8 @@ Every current selected NYISO forecast uses a ZIP-entry last-modified availabilit
 
 | Task | I can mark this complete when I can… | Status |
 |---:|---|---|
-| 1 | derive and validate hour/day/weekend fields from a timezone-aware Series without copying the project code | Next |
-| 2 | reconcile two competing schemas and explain the NOAA unit/hourly-selection decision | Not started |
+| 1 | derive and validate hour/day/weekend fields from a timezone-aware Series without copying the project code | Complete |
+| 2 | reconcile two competing schemas and explain the NOAA unit/hourly-selection decision | Complete |
 | 3 | design a lag/rolling feature whose source values are provably available at the forecast origin | Not started |
 | 4 | explain the common versus market-augmented PJM/NYISO feature sets and why PJM metered load is not a load forecast | Not started |
 | 5 | write tests that fail for leakage, duplicate keys, wrong units, bad cutoffs, and ambiguous latest-vintage ties | Not started |
@@ -74,6 +74,43 @@ What is still assumed, provisional, or unresolved?
 
 **Next single action:**  
 Name one concrete task and its completion check.
+
+## 2026-08-25 — Task 1: Leakage-safe calendar features
+
+**Purpose:**
+Create calendar predictors that capture recurring market patterns while using only information known at the day-ahead forecast cutoff.
+
+**My plain-English explanation:**
+I can derive `hour_of_day`, `day_of_week`, and `is_weekend` from the timezone-aware `timestamp_local` field. Hour of day can capture daily demand and pricing patterns; day of week and the weekend flag can capture differences between workdays and weekends. These fields are leakage-safe because the calendar time of a target hour is known before that hour occurs. Using `America/New_York` makes the features follow the electricity market's local clock, including daylight-saving-time transitions.
+
+**C#/LINQ/SQL analogy:**
+This is like adding computed columns to a SQL query from a typed `DateTimeOffset` value: extract the local hour and weekday first, then derive a Boolean weekend field from the weekday. The important rule is to use the market-local timestamp, not a UTC clock value that could assign a market hour to the wrong calendar day.
+
+**Remaining limitation:**
+The reusable calendar helper currently uses legacy field names and an integer weekend indicator; reconciling it with the validated Notebook 04 contract is part of Task 2.
+
+**Next single action:**
+Compare the Notebook 02 preprocessing workflow with the reusable preprocessing modules and identify the first schema mismatch.
+
+## 2026-08-25 — Task 2: Reusable preprocessing reconciliation
+
+**Purpose:**
+Make the reusable preprocessing code reproduce the approved January Notebook 02 schema and weather policies, so a notebook run and a script run do not silently produce different data.
+
+**My plain-English explanation:**
+I can explain why an external source name, such as `total_lmp_da` or `Integrated Load`, must be translated once into a canonical project name. I can also explain why the January NOAA fields remain in SI units, why one report is selected per hour by a documented priority, and why missing, flagged, and rejected weather values must remain visible as audit fields.
+
+**C#/LINQ/SQL analogy:**
+The canonical schema is an internal DTO contract. The hourly report rule is like `ROW_NUMBER() OVER (PARTITION BY hour ORDER BY report_priority, observed_at)` followed by `WHERE row_number = 1`; it is not an average across incompatible source reports.
+
+**Verification evidence:**
+Fresh-process PJM and NYISO runs each produced 744 ordered, unique hourly rows with no missing price or actual-load values. Weather flags matched Notebook 02: PJM had 3 missing weather hours and NYISO had 7 missing, 7 quality-flagged, and 4 rejected hours. Five pytest tests and Ruff passed.
+
+**Remaining limitation:**
+January has no daylight-saving transition. Resolve the raw NOAA fixed-standard-time versus market-local-time interpretation before applying this weather timestamp policy to 2020–2024.
+
+**Next single action:**
+For one target market-hour, identify the forecast cutoff and prove whether a proposed historical price value was available by that cutoff.
 
 ## 2026-08-21 — External responses and forecast timing
 

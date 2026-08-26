@@ -61,9 +61,9 @@ The committed January processed tables define the canonical preprocessing schema
 
 | Column | Type/range | Meaning | Model role |
 |---|---|---|---|
-| `hour_of_day` | integer 0–23 | Local target-hour clock value | Candidate after Task 1 validation |
-| `day_of_week` | integer 0–6 | Monday=0 through Sunday=6 | Candidate after Task 1 validation |
-| `is_weekend` | Boolean | True for day 5 or 6 | Candidate after Task 1 validation |
+| `hour_of_day` | integer 0–23 | Local target-hour clock value | Validated leakage-safe candidate feature |
+| `day_of_week` | integer 0–6 | Monday=0 through Sunday=6 | Validated leakage-safe candidate feature |
+| `is_weekend` | Boolean | True for day 5 or 6 | Validated leakage-safe candidate feature |
 
 ## Required role groups for modeling-ready tables
 
@@ -86,12 +86,12 @@ This dictionary documents raw source fields, processed fields, feature roles, un
 | Concept | Preferred processed name | Role |
 |---|---|---|
 | Hourly day-ahead price | `day_ahead_price_usd_mwh` | Prediction target |
-| Actual or integrated load | `load_mw` | EDA or safely lagged feature only; excluded at the target hour |
+| Actual or integrated load | `actual_load_mw` | EDA or safely lagged feature only; excluded at the target hour |
 | Selected historical load forecast | `load_forecast_mw` | Candidate predictor subject to market-specific availability rules |
 | Canonical target timestamp | `timestamp_utc` | Join, ordering, validation, split, and modeling key |
 | Market-local target timestamp | `timestamp_local` | Calendar features, market cutoffs, interpretation, and reporting |
 
-If an existing processed file uses `day_ahead_lmp`, treat it as an earlier alias of `day_ahead_price_usd_mwh`. Before final modeling, use one canonical name consistently in notebooks, source code, tests, exported data, and documentation.
+The reusable January preprocessing path uses the canonical names consistently: `day_ahead_price_usd_mwh` and `actual_load_mw`.
 
 ## Common processed electricity fields
 
@@ -100,7 +100,7 @@ If an existing processed file uses `day_ahead_lmp`, treat it as an earlier alias
 | `timestamp_utc` | timezone-aware datetime | UTC | Canonical target delivery-hour timestamp | Required unique key for joins and modeling |
 | `timestamp_local` | timezone-aware datetime | `America/New_York` | PJM or NYISO local target delivery hour | Calendar and cutoff construction; retain UTC as the unique key |
 | `day_ahead_price_usd_mwh` | numeric | `$/MWh` | Complete hourly day-ahead zonal price | Prediction target |
-| `load_mw` | numeric | MW | Actual, metered, or integrated hourly load | EDA/audit; same-hour value excluded from the operational model |
+| `actual_load_mw` | numeric | MW | Actual, metered, or integrated hourly load | EDA/audit; same-hour value excluded from the operational model |
 | `market` | string | — | Market identifier, such as `PJM` or `NYISO` | Provenance and grouped reporting |
 | `location_name` | string | — | PSEG or HUD VL | Provenance and validation |
 | `location_id` | string/integer | — | PJM pnode `51301` or NYISO PTID `61758` | Historical identity validation |
@@ -146,7 +146,7 @@ If an existing processed file uses `day_ahead_lmp`, treat it as an earlier alias
 | `weather_station` | `STATION` | string | — | GHCN station identifier; Newark `USW00014734`, Stewart `USW00014714` |
 | `weather_observed_at_local_standard` | `DATE` | naive source datetime | Fixed Local Standard Time, UTC−05:00 | Raw LCDv2 observation time; do not initially localize as `America/New_York` |
 | `weather_timestamp_utc` | derived from `DATE` | timezone-aware datetime | UTC | Canonical weather timestamp after fixed-standard-time localization |
-| `report_type` | `REPORT_TYPE` | string | — | Primary `FM-15`; `FM-16` fallback; exclude `FM-12`, `SOD`, and `SOM` from the primary series |
+| `report_type` | `REPORT_TYPE` | string | — | Hourly priority: `FM-15`, then `FM-12`, then `FM-16`; exclude `SOD` and `SOM` |
 | `weather_source_code` | `SOURCE` | string | — | NOAA observation-source code |
 | `temperature_c` | `HourlyDryBulbTemperature` | numeric after flag parsing | °C | Already metric; preserve raw text and QC indicators before conversion |
 | `dew_point_c` | `HourlyDewPointTemperature` | numeric after flag parsing | °C | Already metric; apply plausibility and dew-point/temperature checks |
@@ -211,7 +211,7 @@ If an existing processed file uses `day_ahead_lmp`, treat it as an earlier alias
 ## Future dictionary actions
 
 - Verify the exact processed column names by comparing this dictionary with the outputs of `02_data_cleaning.ipynb` and `04_feature_engineering.ipynb`.
-- Resolve the `day_ahead_lmp` versus `day_ahead_price_usd_mwh` naming difference before exporting a final modeling table.
+- Recheck schema consistency if a future source or export introduces a new field name.
 - Add the exact PJM historical forecast columns after the first `load_frcstd_hist` download.
 - Add any authoritative NYISO forecast issuance/publication field when identified.
 - Add DST-fold or repeated-hour audit fields if Technical Bulletin TB-064 requires them.

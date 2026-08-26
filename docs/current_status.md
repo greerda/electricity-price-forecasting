@@ -1,8 +1,8 @@
 # Current Status — Electricity Price Forecasting Capstone
 
-**Last verified:** August 24, 2026  
+**Last verified:** August 25, 2026
 **Current phase:** January 2025 pre-modeling completion gate  
-**Current task:** Task 1 of 7 — validate calendar features in Notebook 04
+**Current task:** Task 3 of 7 — implement forecast-origin-aware historical features
 
 ## Project scope
 
@@ -35,16 +35,29 @@
   - target, candidate, audit, identifier, and excluded-operational groups are defined; and
   - overlap and prohibited-predictor checks pass.
 - Three automated tests pass and Ruff passes for `src` and `tests`.
+- Task 1 calendar-feature validation passed from a fresh Notebook 04 kernel:
+  - 744 rows;
+  - `hour_of_day` is nonmissing integer data spanning 0–23;
+  - `day_of_week` is nonmissing integer data spanning 0–6, with Monday as 0;
+  - `is_weekend` is nonmissing Boolean data and agrees with days 5 and 6;
+  - `candidate_feature_columns` contains only `load_forecast_mw` plus the three calendar fields; and
+  - `pytest` passed (3 tests) and `ruff check src tests` passed.
+- Task 2 reusable-preprocessing reconciliation passed:
+  - canonical price/load names are `day_ahead_price_usd_mwh` and `actual_load_mw`;
+  - NOAA values retain the Notebook 02 SI interpretation;
+  - one report per hour is selected by `FM-15`, then `FM-12`, then `FM-16` priority;
+  - weather missingness, quality, rejection, and imputation flags survive the merge; and
+  - fresh-process PJM and NYISO runs each produced 744 unique ordered hours with Notebook-matching weather-flag counts.
+- Five automated tests pass and `ruff check src tests` passes.
 
 ## Known limitations and unresolved inconsistencies
 
 1. Every selected NYISO forecast currently has `availability_is_proxy=True` and `availability_basis="zip_entry_last_modified"`. This is a material limitation, not a cosmetic warning.
-2. Notebook 02 and `src/electricity_forecasting/data_processing.py` do not yet implement identical NOAA unit and hourly-selection policies.
-3. Configuration/modules still use older names such as `day_ahead_lmp` and `load_mw`, while the committed tables use `day_ahead_price_usd_mwh` and `actual_load_mw`.
-4. Generic row-based lags prove chronological order but do not by themselves prove predictor availability at the chosen forecast origin.
-5. PJM has metered actual load in the current sample, not a verified historical day-ahead load-forecast vintage series.
-6. `notebooks/03_exploratory_analysis.ipynb`, `05_baseline_models.ipynb`, and `06_model_comparison.ipynb` are still placeholders.
-7. January 2025 cannot support final multi-year conclusions.
+2. The January NOAA reconciliation is unaffected by daylight saving time; before the 2020–2024 expansion, reconcile the documented fixed-local-standard-time interpretation of raw NOAA `DATE` values with the market-local timestamp policy across DST transitions.
+3. Generic row-based lags prove chronological order but do not by themselves prove predictor availability at the chosen forecast origin.
+4. PJM has metered actual load in the current sample, not a verified historical day-ahead load-forecast vintage series.
+5. `notebooks/03_exploratory_analysis.ipynb`, `05_baseline_models.ipynb`, and `06_model_comparison.ipynb` are still placeholders.
+6. January 2025 cannot support final multi-year conclusions.
 
 ## External-response policy
 
@@ -54,8 +67,8 @@ Do not block progress on unanswered PJM or NYISO correspondence. Continue with d
 
 Complete these tasks in order. Do not begin model fitting until all seven gates pass.
 
-1. **Validate calendar features in Notebook 04.** From a fresh Python 3.12 kernel, run through the existing feature-role classification and derive `hour_of_day`, `day_of_week`, and `is_weekend` from timezone-aware `timestamp_local`. Prove valid ranges, types, nonmissingness, and candidate-list membership.
-2. **Reconcile the notebook and reusable preprocessing paths.** Make `src/electricity_forecasting/data_processing.py` and configuration use the committed schema (`day_ahead_price_usd_mwh` and `actual_load_mw`), the same NOAA SI-unit interpretation, the same hourly-report selection rule, and the same quality/rejection flags as Notebook 02.
+1. **Complete — validate calendar features in Notebook 04.** Fresh-kernel evidence confirms valid ranges, types, nonmissingness, weekend logic, and candidate-list membership for the three calendar fields.
+2. **Complete — reconcile the notebook and reusable preprocessing paths.** The reusable January path uses the committed schema and matches Notebook 02’s SI-unit, report-priority, hourly-index, and weather-audit policies; focused regression tests pass.
 3. **Implement forecast-origin-aware historical features.** Replace assumptions based only on row position with explicit availability checks relative to each market cutoff. Add price lags and shifted rolling statistics only after tests prove that every source value was knowable at prediction time.
 4. **Complete the comparable PJM feature path.** Use the provisional PJM cutoff of D−1 11:00 America/New_York until authoritative evidence changes it. Exclude same-hour metered load and observed weather. Produce a minimum common feature set for both markets; retain the NYISO load-forecast feature as an explicitly augmented feature until a comparable PJM forecast series is available.
 5. **Expand automated validation.** Populate the empty preprocessing and validation test files. Test schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection, tie failure, prohibited-column exclusion, row counts, and absence of future information. Require `pytest` and Ruff to pass.
@@ -64,31 +77,16 @@ Complete these tasks in order. Do not begin model fitting until all seven gates 
 
 **Exit condition:** after Task 7, the January feasibility pipeline is ready for baseline-model development. January 2025 remains a feasibility sample; it is not the final 2020–2024 evidence base.
 
-## Exact next task — Task 1
+## Exact next task — Task 3
 
-In `notebooks/04_feature_engineering.ipynb`:
+Implement forecast-origin-aware historical price features before using any lag or rolling statistic as a predictor.
 
-1. Restart into the `Python 3.12 (electricity-forecasting)` kernel.
-2. Run the notebook from the top through the completed Step 7 cells.
-3. Run the existing calendar-feature cells.
-4. Confirm:
-   - `hour_of_day` contains integers 0–23;
-   - `day_of_week` contains integers 0–6, where Monday is 0;
-   - `is_weekend` is Boolean and agrees with days 5 and 6;
-   - none of the three fields is missing;
-   - only those three fields are appended to `candidate_feature_columns`; and
-   - all prior target/audit/excluded overlap assertions still pass.
-5. Record the row count, ranges, and candidate list in the notebook output.
-6. Add or update a focused automated test if the reusable calendar-feature function is exercised.
-7. Run `pytest` and `ruff check src tests`.
-
-### Task 1 completion evidence
-
-- Fresh-kernel notebook output showing 744 rows.
-- Valid ranges and nonmissingness for all three fields.
-- Candidate list contains `load_forecast_mw` plus the three calendar fields and no prohibited field.
-- Tests and Ruff pass.
-- `docs/current_status.md` advances to Task 2 only after this evidence exists.
+1. Define each market’s prediction cutoff and the availability timestamp for every candidate historical source value.
+2. Replace positional assumptions with an explicit check that a lag/rolling source value was available at or before the target hour’s cutoff.
+3. Build price lags and shifted rolling statistics only after the availability rule passes.
+4. Add tests that fail when a source value is after the cutoff, when a lag skips an expected elapsed hour, or when a rolling window includes the target.
+5. Preserve the provisional PJM and NYISO cutoff assumptions and the NYISO availability-proxy warning.
+6. Run a fresh-process validation, `pytest`, and `ruff check src tests`; document evidence before advancing to Task 4.
 
 ## Stop conditions
 

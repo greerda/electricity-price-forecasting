@@ -339,10 +339,11 @@ The raw station-year files contain sub-hourly, hourly, daily, and monthly record
 
 Primary rule:
 
-- use `FM-15` routine METAR observations as the main hourly source;
-- exclude `SOD` and `SOM` summary rows;
-- exclude `FM-12` from the primary series because it is largely redundant at Newark and absent from Stewart;
-- use `FM-16` special observations only as a documented fallback when the routine observation is missing; and
+- use `FM-15` routine METAR observations as the first-choice hourly source;
+- use `FM-12` fixed-station SYNOP observations as the second-choice fallback;
+- use `FM-16` special aviation observations as the third-choice fallback;
+- exclude `SOD` and `SOM` summary rows; and
+- select the lowest-priority-numbered eligible report within each local hour before reindexing to the complete January calendar;
 - preserve the original observation timestamp until the hourly alignment rule is applied.
 
 **Future action:** If time permits, perform a sensitivity analysis comparing the primary FM-15 rule with a documented FM-15/FM-16 combination.
