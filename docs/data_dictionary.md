@@ -1,6 +1,6 @@
 # Data Dictionary
 
-**Last updated:** August 24, 2026
+**Last updated:** August 29, 2026
 
 The committed January processed tables define the canonical preprocessing schema. Field eligibility is a separate question from field presence.
 
@@ -64,6 +64,22 @@ The committed January processed tables define the canonical preprocessing schema
 | `hour_of_day` | integer 0–23 | Local target-hour clock value | Validated leakage-safe candidate feature |
 | `day_of_week` | integer 0–6 | Monday=0 through Sunday=6 | Validated leakage-safe candidate feature |
 | `is_weekend` | Boolean | True for day 5 or 6 | Validated leakage-safe candidate feature |
+
+## Derived cutoff-safe price features
+
+The following January 2025 NYISO fields use a configurable, provisional rule that a day-ahead price schedule becomes available at 00:00 America/New_York on its delivery date. This is distinct from, and does not remove, the NYISO load-forecast ZIP-entry availability-proxy warning.
+
+| Column | Type/unit | Meaning | Model role |
+|---|---|---|---|
+| `day_ahead_price_available_at` | timezone-aware datetime, America/New_York | Provisional availability time assigned to each day-ahead price schedule | Audit; not a predictor |
+| `target_day_price_available_by_cutoff` | Boolean | Whether the target day’s own price schedule was available by its prediction cutoff | Audit; expected false for all January 2025 target hours |
+| `previous_day_same_hour_source_timestamp` | timezone-aware datetime, America/New_York | Target timestamp minus one calendar day, at the same local clock hour | Audit join key |
+| `previous_day_same_hour_price_value` | numeric, $/MWh | Raw prior-day same-hour source price before the cutoff-safety mask | Audit; not a predictor |
+| `previous_day_same_hour_price_available_at` | timezone-aware datetime, America/New_York | Provisional availability time of the prior-day source price | Audit |
+| `previous_day_same_hour_price_is_available` | Boolean | Whether the prior-day source was available no later than the target cutoff | Audit |
+| `day_ahead_price_lag_1d` | numeric, $/MWh | Prior-day same-hour price retained only when cutoff-safe | Approved candidate predictor |
+| `day_ahead_price_lag_1d_rolling_mean_24h` | numeric, $/MWh | Full 24-value mean of cutoff-safe prior-day price lags | Approved candidate predictor |
+
 
 ## Required role groups for modeling-ready tables
 

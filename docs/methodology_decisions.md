@@ -109,7 +109,7 @@ Do not apply Fahrenheit-to-Celsius or miles-per-hour-to-meters-per-second conver
 
 An authoritative PJM, NYISO, NOAA, syllabus, or professor source may replace a provisional assumption. Record the source, date, affected code/configuration, and rerun requirements in this file and `docs/decisions.md`.
 
-**Last updated:** August 21, 2026
+**Last updated:** August 25, 2026
 
 This document records methodological decisions for the electricity-price forecasting capstone. It distinguishes adopted decisions, conditional decisions, unresolved questions, and future actions.
 
@@ -480,6 +480,21 @@ Before bulk modeling, audit:
 - Private correspondence is summarized without publishing personal contact details.
 - Local reference files belong in a private or gitignored reference location.
 
+## M-19: Model-comparison depth and interpretability
+
+**Status:** Adopted
+
+The final model comparison will include:
+
+- a feature-ablation comparison between the common calendar-and-availability-safe-price-history feature set and the NYISO augmented set that adds `load_forecast_mw`; and
+- error reporting by hour of day, weekday/weekend, and normal-price versus extreme-price regimes in addition to overall MAE and RMSE.
+
+For an ablation, hold the model class, chronological split, preprocessing, and metrics fixed; change only the feature set. The NYISO augmented result remains conditional because its current forecast-availability evidence is a ZIP-entry proxy.
+
+Define any price-regime threshold using training data only. Preserve negative and high prices; do not delete, winsorize, or classify observations with information from the final test set.
+
+**Time-permitting additions:** assess feature-importance stability across chronological validation folds and include a concise bounded-tuning diagnostic. These additions do not authorize new primary model families or final-test-driven choices.
+
 ## Future-change protocol
 
 When later evidence changes a decision:
@@ -491,4 +506,20 @@ When later evidence changes a decision:
 5. rebuild derived data where necessary;
 6. rerun tests and notebooks from a clean kernel; and
 7. update `PROJECT_PLAN.md`, `current_status.md`, `data_source_register.md`, and `data_dictionary.md` in the same change set.
+## NYISO January 2025 historical day-ahead price features
 
+For each NYISO target delivery hour, use the existing provisional prediction cutoff of D−1 05:00 America/New_York.
+
+For the January 2025 feasibility implementation, assign each day-ahead price schedule a configurable provisional availability time of 00:00 America/New_York on its delivery date. This is an explicit project assumption, not verified NYISO publication evidence.
+
+Create a prior-day same-hour source timestamp by subtracting one calendar day from the target’s local timestamp. Retain the source price only when:
+
+`previous_day_same_hour_price_available_at <= prediction_cutoff`
+
+Store the source timestamp, raw source value, source availability time, and Boolean eligibility result as audit fields. The approved `day_ahead_price_lag_1d` feature is the raw source value masked to missing when that condition is false.
+
+Create `day_ahead_price_lag_1d_rolling_mean_24h` only from the already cutoff-safe lag feature, require a full 24-value window, and do not use the current target price as an input.
+
+Fresh-kernel January verification produced 744 target hours, 720 cutoff-safe prior-day lags, and 697 full-window rolling means. The 24 missing prior-day lag values are the January 1 boundary, which lacks December 31 source data in this feasibility sample.
+
+This price-schedule availability assumption is independent of the NYISO load-forecast ZIP-entry last-modified-time proxy. The proxy warning remains active and must not be removed or treated as authoritative availability evidence.

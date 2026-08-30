@@ -6,6 +6,61 @@ import numpy as np
 import pandas as pd
 
 
+def is_available_by_cutoff(
+    source_available_at: pd.Series,
+    prediction_cutoff: pd.Series,
+) -> pd.Series:
+    """Return whether each source was available by its target cutoff."""
+    return (
+        source_available_at.notna()
+        & source_available_at.le(prediction_cutoff).fillna(False)
+    )
+
+def add_rolling_mean_from_safe_feature(
+    df: pd.DataFrame,
+    *,
+    safe_feature_column: str,
+    window: int,
+    feature_column: str,
+) -> pd.DataFrame:
+    """Add a full-window mean from a cutoff-safe, target-excluded feature."""
+    if window < 1:
+        raise ValueError("window must be at least 1")
+
+    result = df.copy()
+
+    result[feature_column] = result[
+        safe_feature_column
+    ].rolling(
+        window=window,
+        min_periods=window,
+    ).mean()
+
+    return result
+
+
+def add_cutoff_safe_feature(
+    df: pd.DataFrame,
+    *,
+    source_value_column: str,
+    source_available_at_column: str,
+    prediction_cutoff_column: str,
+    feature_column: str,
+) -> pd.DataFrame:
+    """Add a feature only when its source was available by the cutoff."""
+    result = df.copy()
+
+    source_is_available = is_available_by_cutoff(
+        result[source_available_at_column],
+        result[prediction_cutoff_column],
+    )
+
+    result[feature_column] = result[source_value_column].where(
+        source_is_available
+    )
+
+    return result
+
 def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create calendar features from the local market timestamp."""
     result = df.copy()
