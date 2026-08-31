@@ -1,8 +1,8 @@
 # Current Status — Electricity Price Forecasting Capstone
 
-**Last verified:** August 30, 2026
+**Last verified:** August 31, 2026
 **Current phase:** January 2025 pre-modeling completion gate
-**Current task:** Task 5 of 7 — expand automated validation
+**Current task:** Task 7 of 7 — create the pre-modeling checkpoint
 ## Project scope
 
 - Research question: How accurately can statistical and machine-learning models forecast hourly day-ahead electricity prices, and how does performance differ between PJM PSEG and NYISO Hudson Valley Zone G?
@@ -61,6 +61,18 @@
   - same-hour metered load, observed weather, target components, identifiers, and audit fields are excluded from PJM operational predictors;
   - the common PJM/NYISO feature set contains calendar and cutoff-safe price-history features only, while NYISO adds only `load_forecast_mw` as an explicitly augmented feature; and
   - a fresh Notebook 04 kernel completed with zero errors; five focused tests passed; and Ruff passed.
+- Task 5 automated validation passed:
+  - reusable validation now checks the canonical target, required columns, duplicate or unordered timestamps, missing hourly timestamps, missing targets, and prohibited operational predictors;
+  - both processed January tables have 744 valid, unique target hours under the common validator;
+  - calendar ranges, cutoff eligibility, cutoff-safe lags and rolling means, latest eligible-vintage selection, and tied-vintage failure are covered by tests;
+  - a fresh Notebook 04 kernel completed with zero errors after adopting the tested latest-vintage selector; and
+  - the full test suite passed 21 tests, `ruff check src tests` passed, and `git diff --check` found no whitespace errors.
+- Task 6 January 2025 EDA passed:
+  - Notebook 03 verifies both processed tables have 744 unique, ordered, nonmissing target hours and documents their schemas and local/UTC ranges;
+  - it includes descriptive price and actual-load summaries, time-series charts, price distributions, hourly and day-of-week profiles, and price/load correlations;
+  - no negative-price hours occurred; market-specific 95th-percentile thresholds identified 38 high-price hours at or above $234.53/MWh in PJM and $198.64/MWh in NYISO;
+  - same-hour actual load and observed weather are explicitly labeled descriptive only and excluded from operational predictors;
+  - a fresh Notebook 03 kernel completed with zero errors; the full 21-test suite and Ruff passed; and `git diff --check` found no whitespace errors.
 
 
 ## Known limitations and unresolved inconsistencies
@@ -84,20 +96,20 @@ Complete these tasks in order. Do not begin model fitting until all seven gates 
 2. **Complete — reconcile the notebook and reusable preprocessing paths.** The reusable January path uses the committed schema and matches Notebook 02’s SI-unit, report-priority, hourly-index, and weather-audit policies; focused regression tests pass.
 3. **Complete — implement forecast-origin-aware NYISO historical-price features.** Explicit source-availability checks, cutoff-safe prior-day lags, and full-window rolling means are implemented and validated. The NYISO availability-proxy warning and provisional availability assumptions remain active.
 4. **Complete — comparable PJM feature path.** The provisional D−1 11:00 America/New_York cutoff, cutoff-safe price features, excluded same-hour operational fields, and common-versus-NYISO-augmented feature sets are implemented and validated. The cutoff remains provisional.
-5. **Expand automated validation.** Populate the empty preprocessing and validation test files. Test schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection, tie failure, prohibited-column exclusion, row counts, and absence of future information. Require `pytest` and Ruff to pass.
-6. **Complete and validate Notebook 03 EDA.** Use `notebooks/03_exploratory_analysis.ipynb` and the two committed January processed tables. Keep actual load and observed weather descriptive only, preserve negative and high prices, distinguish feasibility findings from final conclusions, and run from a fresh kernel.
+5. **Complete — expand automated validation.** Tests now cover schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection and tie failure, prohibited-column exclusion, row counts, and absence of future information. The full 21-test suite and Ruff pass.
+6. **Complete — validate Notebook 03 EDA.** Notebook 03 now provides descriptive January price/load analysis, retains and identifies high/negative prices, labels same-hour actual load and observed weather as non-operational, and runs from a fresh kernel without errors.
 7. **Create the pre-modeling checkpoint.** Export one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles. Require 744 unique target hours, nonmissing targets, no prohibited predictors, successful fresh-process notebook runs, passing tests/Ruff, updated documentation, and a deliberate Git commit.
 
 **Exit condition:** after Task 7, the January feasibility pipeline is ready for baseline-model development. January 2025 remains a feasibility sample; it is not the final 2020–2024 evidence base.
 
-## Exact next task — Task 5
+## Exact next task — Task 7
 
-Expand automated validation.
+Create the pre-modeling checkpoint.
 
-1. Add tests for processed-table schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection, tie failure, prohibited-column exclusion, row counts, and absence of future information.
-2. Include both PJM and NYISO paths where the rule is shared or comparable.
-3. Run the full relevant pytest suite and Ruff.
-4. Do not begin EDA, exports, or modeling.
+1. Export one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles.
+2. Require 744 unique target hours, nonmissing targets, and no prohibited operational predictors.
+3. Preserve the NYISO availability-proxy warning and the provisional PJM/NYISO cutoff assumptions.
+4. Verify fresh-process notebook runs, tests, Ruff, documentation, and the exact files before a deliberate Git commit.
 
 ## Stop conditions
 

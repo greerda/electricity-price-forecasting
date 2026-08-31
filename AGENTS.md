@@ -16,7 +16,7 @@ professors and prospective employers.
 The project is at the January 2025 pre-modeling completion gate. The authoritative remaining work is Tasks 1–7 in `docs/current_status.md` and `docs/project_plan.md`.
 
 - Work on one numbered task at a time.
-- The exact next task is Task 1: fresh-kernel validation of `hour_of_day`, `day_of_week`, and `is_weekend` in `notebooks/04_feature_engineering.ipynb`.
+- The exact next task is Task 7: create the pre-modeling checkpoint by exporting one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles. Verify 744 unique target hours, nonmissing targets, no prohibited predictors, fresh-process notebook runs, tests, Ruff, and documentation before a deliberate Git commit.
 - Do not create modeling-ready exports until Task 7.
 - Do not train or compare models until all seven tasks pass.
 - Preserve the NYISO availability-proxy warning.

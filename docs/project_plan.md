@@ -1,8 +1,8 @@
 # Electricity Price Forecasting Capstone — Project Plan
 
-**Last updated:** August 30, 2026
+**Last updated:** August 31, 2026
 **Current phase:** January 2025 pre-modeling completion gate  
-**Current task:** Task 5 of 7 — expand automated validation
+**Current task:** Task 7 of 7 — create the pre-modeling checkpoint
 
 ## How to Use This Document
 
@@ -29,8 +29,8 @@ Complete these tasks in order. Do not begin model fitting until all seven gates 
 2. **Complete — reconcile the notebook and reusable preprocessing paths.** The reusable January path now uses the committed schema and matches Notebook 02's SI-unit, report-priority, complete-hourly-index, and weather-audit policies.
 3. **Complete — implement forecast-origin-aware historical features.** Explicit availability checks, cutoff-safe prior-day lags, and full-window rolling statistics are implemented and validated for NYISO. Availability assumptions remain provisional.
 4. **Complete — comparable PJM feature path.** The provisional D−1 11:00 America/New_York cutoff, cutoff-safe historical-price features, excluded same-hour operational fields, and common-versus-NYISO-augmented feature sets are implemented and validated.
-5. **Expand automated validation.** Populate the empty preprocessing and validation test files. Test schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection, tie failure, prohibited-column exclusion, row counts, and absence of future information. Require `pytest` and Ruff to pass.
-6. **Complete and validate Notebook 03 EDA.** Use `notebooks/03_exploratory_analysis.ipynb` and the two committed January processed tables. Keep actual load and observed weather descriptive only, preserve negative and high prices, distinguish feasibility findings from final conclusions, and run from a fresh kernel.
+5. **Complete — expand automated validation.** Tests cover schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection and tie failure, prohibited-column exclusion, row counts, and absence of future information. The full 21-test suite and Ruff pass.
+6. **Complete — validate Notebook 03 EDA.** Notebook 03 provides descriptive January price/load analysis, retains and identifies high/negative prices, labels same-hour actual load and observed weather as non-operational, and runs from a fresh kernel without errors.
 7. **Create the pre-modeling checkpoint.** Export one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles. Require 744 unique target hours, nonmissing targets, no prohibited predictors, successful fresh-process notebook runs, passing tests/Ruff, updated documentation, and a deliberate Git commit.
 
 **Exit condition:** after Task 7, the January feasibility pipeline is ready for baseline-model development. January 2025 remains a feasibility sample; it is not the final 2020–2024 evidence base.

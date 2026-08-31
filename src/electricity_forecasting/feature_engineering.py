@@ -69,22 +69,22 @@ def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
     # follow the local business day, not the UTC clock.
     local_time = result["timestamp_local"]
 
-    result["hour"] = local_time.dt.hour
+    result["hour_of_day"] = local_time.dt.hour
     result["day_of_week"] = local_time.dt.dayofweek
     result["day_of_month"] = local_time.dt.day
     result["month"] = local_time.dt.month
     result["is_weekend"] = (
-        result["day_of_week"].isin([5, 6]).astype(int)
+    result["day_of_week"].isin([5, 6]).astype(int)
     )
 
     # Sine and cosine preserve the circular relationship: hour 23 is close to
     # hour 0, even though their integer values are far apart.
     result["hour_sin"] = np.sin(
-        2.0 * np.pi * result["hour"] / 24.0
+        2.0 * np.pi * result["hour_of_day"] / 24.0
     )
 
     result["hour_cos"] = np.cos(
-        2.0 * np.pi * result["hour"] / 24.0
+        2.0 * np.pi * result["hour_of_day"] / 24.0
     )
 
     result["day_of_week_sin"] = np.sin(
@@ -195,3 +195,43 @@ def build_initial_features(df: pd.DataFrame) -> pd.DataFrame:
     result = add_load_ramp_features(result)
 
     return result
+
+def select_latest_eligible_forecasts(
+    forecast_vintages: pd.DataFrame,
+    *,
+    target_timestamp_column: str,
+    available_at_column: str,
+    prediction_cutoff_column: str,
+) -> pd.DataFrame:
+    """Select one latest cutoff-eligible forecast per target hour."""
+    eligible_vintages = forecast_vintages.loc[
+        is_available_by_cutoff(
+            forecast_vintages[available_at_column],
+            forecast_vintages[prediction_cutoff_column],
+        )
+    ].copy()
+
+    latest_available_at = eligible_vintages.groupby(
+        target_timestamp_column
+    )[available_at_column].transform("max")
+
+    latest_rows = eligible_vintages.loc[
+        eligible_vintages[available_at_column].eq(latest_available_at)
+    ].copy()
+
+    latest_row_counts = latest_rows.groupby(
+        target_timestamp_column
+    ).size()
+
+    if not latest_row_counts.eq(1).all():
+        tied_targets = latest_row_counts[
+            latest_row_counts.ne(1)
+        ].index.tolist()
+        raise ValueError(
+            "Expected exactly one latest eligible forecast per target "
+            f"hour; found ties for {tied_targets}."
+        )
+
+    return latest_rows.sort_values(
+        target_timestamp_column
+    ).reset_index(drop=True)

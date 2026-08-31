@@ -1,11 +1,17 @@
+# focused tests tell us the new sections work; this checks that the new functions
+# and imports did not break cleaning or splitting tests elsewhere in the project.
+
 import pandas as pd
+import pytest
 
 from electricity_forecasting.feature_engineering import (
+    add_calendar_features,
     add_cutoff_safe_feature,
     add_lag_features,
     add_rolling_features,
     add_rolling_mean_from_safe_feature,
     is_available_by_cutoff,
+    select_latest_eligible_forecasts,
 )
 
 
@@ -146,3 +152,119 @@ def test_add_rolling_mean_from_safe_feature_requires_full_window():
     assert result[rolling_feature].iloc[2] == 20.0
     assert result[rolling_feature].iloc[3] == 30.0
     assert rolling_feature not in df.columns
+
+
+def test_add_calendar_features_uses_local_time_and_valid_ranges():
+    df = pd.DataFrame(
+        {
+            "timestamp_local": pd.to_datetime(
+                [
+                    "2025-01-03 23:00:00-05:00",
+                    "2025-01-04 00:00:00-05:00",
+                ],
+            ),
+        }
+    )
+
+    result = add_calendar_features(df)
+
+    assert result["hour_of_day"].tolist() == [23, 0]
+    assert result["day_of_week"].tolist() == [4, 5]
+    assert result["is_weekend"].tolist() == [0, 1]
+    assert result["hour_of_day"].between(0, 23).all()
+    assert result["day_of_week"].between(0, 6).all()
+    assert result["hour_sin"].between(-1.0, 1.0).all()
+    assert result["hour_cos"].between(-1.0, 1.0).all()
+
+
+def test_select_latest_eligible_forecasts_uses_newest_safe_vintage():
+    cutoff = pd.Timestamp(
+        "2025-01-09 05:00",
+        tz="America/New_York",
+    )
+
+    forecast_vintages = pd.DataFrame(
+        {
+            "target_timestamp": [
+                pd.Timestamp(
+                    "2025-01-10 12:00",
+                    tz="America/New_York",
+                ),
+                pd.Timestamp(
+                    "2025-01-10 12:00",
+                    tz="America/New_York",
+                ),
+                pd.Timestamp(
+                    "2025-01-10 12:00",
+                    tz="America/New_York",
+                ),
+                pd.Timestamp(
+                    "2025-01-10 13:00",
+                    tz="America/New_York",
+                ),
+            ],
+            "forecast_available_at": [
+                pd.Timestamp(
+                    "2025-01-09 03:00",
+                    tz="America/New_York",
+                ),
+                cutoff,
+                pd.Timestamp(
+                    "2025-01-09 06:00",
+                    tz="America/New_York",
+                ),
+                pd.Timestamp(
+                    "2025-01-09 04:00",
+                    tz="America/New_York",
+                ),
+            ],
+            "prediction_cutoff": [cutoff] * 4,
+            "load_forecast_mw": [100.0, 110.0, 120.0, 130.0],
+        }
+    )
+
+    selected = select_latest_eligible_forecasts(
+        forecast_vintages,
+        target_timestamp_column="target_timestamp",
+        available_at_column="forecast_available_at",
+        prediction_cutoff_column="prediction_cutoff",
+    )
+
+    assert selected["load_forecast_mw"].tolist() == [110.0, 130.0]
+    assert selected["forecast_available_at"].tolist() == [
+        cutoff,
+        pd.Timestamp(
+            "2025-01-09 04:00",
+            tz="America/New_York",
+        ),
+    ]
+
+def test_select_latest_eligible_forecasts_rejects_tied_vintages():
+    target_timestamp = pd.Timestamp(
+        "2025-01-10 12:00",
+        tz="America/New_York",
+    )
+    cutoff = pd.Timestamp(
+        "2025-01-09 05:00",
+        tz="America/New_York",
+    )
+
+    forecast_vintages = pd.DataFrame(
+        {
+            "target_timestamp": [target_timestamp, target_timestamp],
+            "forecast_available_at": [cutoff, cutoff],
+            "prediction_cutoff": [cutoff, cutoff],
+            "load_forecast_mw": [100.0, 110.0],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="found ties",
+    ):
+        select_latest_eligible_forecasts(
+            forecast_vintages,
+            target_timestamp_column="target_timestamp",
+            available_at_column="forecast_available_at",
+            prediction_cutoff_column="prediction_cutoff",
+        )

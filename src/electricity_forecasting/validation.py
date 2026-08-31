@@ -51,7 +51,7 @@ def validate_chronological_order(
 
 def validate_target(
     df: pd.DataFrame,
-    target_column: str = "day_ahead_lmp",
+    target_column: str = "day_ahead_price_usd_mwh",
 ) -> None:
     # The published day-ahead price is the supervised-learning target, so a
     # missing value cannot be silently used for model fitting or scoring.
@@ -60,6 +60,22 @@ def validate_target(
     if missing_count:
         raise DataValidationError(
             f"{target_column} contains {missing_count} missing values."
+        )
+
+def validate_no_prohibited_predictors(
+    candidate_feature_columns: list[str],
+    prohibited_columns: set[str],
+) -> None:
+    """Reject operational or audit columns selected as predictors."""
+
+    overlap = set(candidate_feature_columns).intersection(
+        prohibited_columns
+    )
+
+    if overlap:
+        raise DataValidationError(
+            "Prohibited predictor columns selected: "
+            f"{sorted(overlap)}"
         )
 
 
