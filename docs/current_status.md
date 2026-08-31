@@ -2,7 +2,7 @@
 
 **Last verified:** August 31, 2026
 **Current phase:** January 2025 pre-modeling completion gate
-**Current task:** Task 7 of 7 — pre-modeling checkpoint verified and ready for deliberate commit
+**Current task:** Task 7 of 7 — pre-modeling checkpoint complete
 ## Project scope
 
 - Research question: How accurately can statistical and machine-learning models forecast hourly day-ahead electricity prices, and how does performance differ between PJM PSEG and NYISO Hudson Valley Zone G?
