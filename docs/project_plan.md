@@ -648,16 +648,16 @@ Every source used in the final paper must be recorded with sufficient informatio
 
 ## 21. Immediate Next Task
 
-Complete Task 3 only: implement forecast-origin-aware historical price features.
+Complete Task 7 only: create the January pre-modeling checkpoint.
 
-1. Define each market's provisional prediction cutoff and an availability timestamp for every proposed lag or rolling source value.
-2. Prove each source value was available at or before the target hour's cutoff; chronological row position alone is insufficient.
-3. Add only availability-safe price lags and shifted rolling statistics.
-4. Add tests for post-cutoff values, missing elapsed hours, and target leakage in rolling windows.
-5. Preserve the NYISO ZIP-entry availability-proxy warning and provisional PJM D−1 11:00 / NYISO D−1 05:00 cutoffs.
-6. Run fresh-process validation, `pytest`, and `ruff check src tests`.
+1. Rebuild the January feature tables from a fresh kernel in Notebook 04.
+2. Assign every retained field an explicit role: target, candidate predictor, identifier, audit, or excluded operational field.
+3. Assert 744 unique target hours, nonmissing targets, valid column-role membership, and no prohibited operational predictors.
+4. Preserve the NYISO ZIP-entry availability-proxy warning and the provisional PJM D−1 11:00 / NYISO D−1 05:00 cutoffs.
+5. Export one validated January modeling-ready checkpoint table per market only after those checks pass.
+6. Verify the fresh-process notebook, `pytest`, Ruff, documentation, and the exact files before a deliberate commit.
 
-Do not create Task 7 modeling-ready CSV files or train models during Task 3.
+Do not train, tune, or compare models until Task 7 has passed and its checkpoint tables have been verified.
 
 ---
 
@@ -669,11 +669,11 @@ The following work can proceed safely:
 - Continue the literature review.
 - Build the project bibliography.
 - Document data dictionaries.
-- Design feature-engineering functions using January data.
-- Test chronological splitting code.
-- Implement baseline-model scaffolding using leakage-safe features.
+- Prepare documentation and tests needed for the Task 7 checkpoint.
 - Draft the introduction, background, and methodology sections.
 - Document all provisional variables and unresolved decisions.
+
+After Task 7 passes, baseline-model scaffolding and chronological-splitting work may begin using the validated checkpoint tables.
 
 The following work should wait:
 
@@ -713,13 +713,13 @@ The project will be considered complete when:
 
 **Current phase:** January 2025 pre-modeling completion gate.
 
-**Verified checkpoint:** Notebook 02 has two 744-row processed electricity tables and a 4,464-row NYISO forecast-vintage table. Notebook 04 Steps 1–7 and calendar validation are complete. The reusable January preprocessing path has been reconciled and tested against Notebook 02's canonical schema and weather policies.
+**Verified checkpoint:** Notebook 02 has two 744-row processed electricity tables and a 4,464-row NYISO forecast-vintage table. Notebook 04 Tasks 1–6, including calendar and cutoff-safe price-feature validation, are complete. The reusable January preprocessing path has been reconciled and tested against Notebook 02's canonical schema and weather policies.
 
 **Current working implementation:** `notebooks/04_feature_engineering.ipynb` and `src/electricity_forecasting/feature_engineering.py`.
 
-**Exact next task:** Task 3 — forecast-origin-aware historical features.
+**Exact next task:** Task 7 — create the January pre-modeling checkpoint.
 
-**Primary limitations:** NYISO availability uses a ZIP timestamp proxy; PJM lacks a verified comparable load-forecast vintage series; forecast-origin-aware lags are not yet complete; and NOAA raw timestamp handling needs DST validation before the multi-year expansion.
+**Primary limitations:** NYISO selected load forecasts use a ZIP-entry last-modified-time availability proxy; PJM's D−1 11:00 cutoff and price-schedule availability remain provisional; PJM lacks a verified comparable historical load-forecast vintage series; and NOAA raw timestamp handling needs DST validation before the multi-year expansion.
 
 **Pre-modeling exit:** all seven authoritative tasks pass, January modeling-ready tables are validated, notebooks run fresh, tests/Ruff pass, and documentation matches the implementation.
 
