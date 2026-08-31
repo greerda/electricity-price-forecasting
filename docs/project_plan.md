@@ -2,7 +2,7 @@
 
 **Last updated:** August 31, 2026
 **Current phase:** January 2025 pre-modeling completion gate  
-**Current task:** Task 7 of 7 — create the pre-modeling checkpoint
+**Current task:** Task 7 of 7 — pre-modeling checkpoint verified and ready for deliberate commit
 
 ## How to Use This Document
 
@@ -31,7 +31,7 @@ Complete these tasks in order. Do not begin model fitting until all seven gates 
 4. **Complete — comparable PJM feature path.** The provisional D−1 11:00 America/New_York cutoff, cutoff-safe historical-price features, excluded same-hour operational fields, and common-versus-NYISO-augmented feature sets are implemented and validated.
 5. **Complete — expand automated validation.** Tests cover schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection and tie failure, prohibited-column exclusion, row counts, and absence of future information. The full 21-test suite and Ruff pass.
 6. **Complete — validate Notebook 03 EDA.** Notebook 03 provides descriptive January price/load analysis, retains and identifies high/negative prices, labels same-hour actual load and observed weather as non-operational, and runs from a fresh kernel without errors.
-7. **Create the pre-modeling checkpoint.** Export one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles. Require 744 unique target hours, nonmissing targets, no prohibited predictors, successful fresh-process notebook runs, passing tests/Ruff, updated documentation, and a deliberate Git commit.
+7. **Complete — create the pre-modeling checkpoint.** Notebook 04 exported validated January checkpoint CSV files for PJM and NYISO with explicit field roles. Both tables have 744 unique ordered target hours and nonmissing targets; role-overlap and prohibited-predictor checks, fresh-kernel execution, the 21-test suite, and Ruff passed. The NYISO availability-proxy warning and provisional market cutoffs remain active.
 
 **Exit condition:** after Task 7, the January feasibility pipeline is ready for baseline-model development. January 2025 remains a feasibility sample; it is not the final 2020–2024 evidence base.
 
@@ -646,18 +646,15 @@ Every source used in the final paper must be recorded with sufficient informatio
 
 ---
 
-## 21. Immediate Next Task
+## 21. Post-gate Planning Task
 
-Complete Task 7 only: create the January pre-modeling checkpoint.
+Define the first baseline-model development task for the full 2020–2024 study period.
 
-1. Rebuild the January feature tables from a fresh kernel in Notebook 04.
-2. Assign every retained field an explicit role: target, candidate predictor, identifier, audit, or excluded operational field.
-3. Assert 744 unique target hours, nonmissing targets, valid column-role membership, and no prohibited operational predictors.
-4. Preserve the NYISO ZIP-entry availability-proxy warning and the provisional PJM D−1 11:00 / NYISO D−1 05:00 cutoffs.
-5. Export one validated January modeling-ready checkpoint table per market only after those checks pass.
-6. Verify the fresh-process notebook, `pytest`, Ruff, documentation, and the exact files before a deliberate commit.
+1. Review the January checkpoint contract and unresolved availability limitations.
+2. Decide whether the next unit is full-period data acquisition or baseline-model scaffolding.
+3. Keep January 2025 as feasibility evidence, not final modeling evidence or a basis for capstone conclusions.
 
-Do not train, tune, or compare models until Task 7 has passed and its checkpoint tables have been verified.
+Do not train, tune, or compare models until the next task is explicitly scoped and the appropriate historical data are available.
 
 ---
 
@@ -717,7 +714,7 @@ The project will be considered complete when:
 
 **Current working implementation:** `notebooks/04_feature_engineering.ipynb` and `src/electricity_forecasting/feature_engineering.py`.
 
-**Exact next task:** Task 7 — create the January pre-modeling checkpoint.
+**Exact next task:** Post-gate planning — define the first full-period baseline-model development task.
 
 **Primary limitations:** NYISO selected load forecasts use a ZIP-entry last-modified-time availability proxy; PJM's D−1 11:00 cutoff and price-schedule availability remain provisional; PJM lacks a verified comparable historical load-forecast vintage series; and NOAA raw timestamp handling needs DST validation before the multi-year expansion.
 

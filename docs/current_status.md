@@ -2,7 +2,7 @@
 
 **Last verified:** August 31, 2026
 **Current phase:** January 2025 pre-modeling completion gate
-**Current task:** Task 7 of 7 — create the pre-modeling checkpoint
+**Current task:** Task 7 of 7 — pre-modeling checkpoint verified and ready for deliberate commit
 ## Project scope
 
 - Research question: How accurately can statistical and machine-learning models forecast hourly day-ahead electricity prices, and how does performance differ between PJM PSEG and NYISO Hudson Valley Zone G?
@@ -98,24 +98,32 @@ Complete these tasks in order. Do not begin model fitting until all seven gates 
 4. **Complete — comparable PJM feature path.** The provisional D−1 11:00 America/New_York cutoff, cutoff-safe price features, excluded same-hour operational fields, and common-versus-NYISO-augmented feature sets are implemented and validated. The cutoff remains provisional.
 5. **Complete — expand automated validation.** Tests now cover schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection and tie failure, prohibited-column exclusion, row counts, and absence of future information. The full 21-test suite and Ruff pass.
 6. **Complete — validate Notebook 03 EDA.** Notebook 03 now provides descriptive January price/load analysis, retains and identifies high/negative prices, labels same-hour actual load and observed weather as non-operational, and runs from a fresh kernel without errors.
-7. **Create the pre-modeling checkpoint.** Export one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles. Require 744 unique target hours, nonmissing targets, no prohibited predictors, successful fresh-process notebook runs, passing tests/Ruff, updated documentation, and a deliberate Git commit.
+7. **Complete — create the pre-modeling checkpoint.** Notebook 04 exported validated PJM and NYISO January checkpoint CSV files with explicit field roles. Both contain 744 unique ordered target hours and nonmissing targets; role-overlap and prohibited-predictor checks passed. Fresh-kernel notebook execution, 21 pytest tests, and Ruff passed. The NYISO availability-proxy warning and provisional PJM/NYISO cutoff assumptions remain active.
 
 **Exit condition:** after Task 7, the January feasibility pipeline is ready for baseline-model development. January 2025 remains a feasibility sample; it is not the final 2020–2024 evidence base.
 
-## Exact next task — Task 7
+## Task 7 implementation evidence
 
-Create the pre-modeling checkpoint.
+Notebook 04 now builds and exports the January 2025 pre-modeling checkpoint files:
 
-1. Export one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles.
-2. Require 744 unique target hours, nonmissing targets, and no prohibited operational predictors.
-3. Preserve the NYISO availability-proxy warning and the provisional PJM/NYISO cutoff assumptions.
-4. Verify fresh-process notebook runs, tests, Ruff, documentation, and the exact files before a deliberate Git commit.
+- `data/processed/pjm_pseg_january_2025_modeling_ready.csv` — 744 rows and 38 classified columns.
+- `data/processed/nyiso_hudson_valley_january_2025_modeling_ready.csv` — 744 rows and 47 classified columns.
+
+For both markets, the notebook verified 744 unique ordered target hours, nonmissing targets, complete non-overlapping target/predictor/identifier/audit/excluded roles, and no prohibited operational predictors. It completed a fresh-kernel run without recorded errors.
+
+The PJM D−1 11:00 and NYISO D−1 05:00 cutoffs remain provisional. Every selected NYISO January load forecast retains `availability_is_proxy=True` and `availability_basis="zip_entry_last_modified"`; this is a warning, not authoritative publication-time evidence.
+
+Verification: `pytest -v` passed 21 tests; Ruff passed for `src`, `tests`, and Notebook 04.
+
+
+## Exact next task — post-gate planning
+
+Define the first baseline-model development task for the full 2020–2024 study period. Do not treat the January 2025 feasibility sample as final modeling evidence or final capstone results.
 
 ## Stop conditions
 
 Do not yet:
 
-- create the Task 7 modeling-ready CSV files;
 - train, tune, or compare models;
 - use same-hour actual load or observed weather as operational predictors;
 - hide or remove the NYISO availability-proxy warning;

@@ -1,6 +1,6 @@
 # Data Dictionary
 
-**Last updated:** August 30, 2026
+**Last updated:** August 31, 2026
 
 The committed January processed tables define the canonical preprocessing schema. Field eligibility is a separate question from field presence.
 
@@ -93,7 +93,18 @@ Every column must belong to exactly one documented group:
 
 Task 7 must assert that groups exist, contain no duplicate names, do not overlap, and place no target, identifier, audit, or excluded field in the candidate list.
 
-**Last updated:** August 21, 2026
+### January 2025 checkpoint exports
+
+| Market | Checkpoint file | Target | Candidate predictors | Identifiers | Audit fields | Excluded operational fields |
+|---|---|---:|---|---:|---:|---:|
+| PJM PSEG | `pjm_pseg_january_2025_modeling_ready.csv` | 1 | `hour_of_day`, `day_of_week`, `is_weekend`, `day_ahead_price_lag_1d`, `day_ahead_price_lag_1d_rolling_mean_24h` | 10 | 8 | 14 |
+| NYISO Hudson Valley | `nyiso_hudson_valley_january_2025_modeling_ready.csv` | 1 | PJM candidate set plus `load_forecast_mw` | 12 | 14 | 14 |
+
+Both checkpoint tables contain 744 ordered, unique January 2025 target hours and a nonmissing `day_ahead_price_usd_mwh` target. The field roles are validated in Notebook 04 before export. Same-hour `actual_load_mw` and observed weather fields are retained only as excluded operational fields; they are not candidate predictors.
+
+The NYISO `load_forecast_mw` candidate remains conditional: all 744 January rows use `availability_basis="zip_entry_last_modified"` and `availability_is_proxy=True`. It is suitable for feasibility-pipeline development only until authoritative historical publication or issuance timing is verified.
+
+**Last updated:** August 31, 2026
 
 This dictionary documents raw source fields, processed fields, feature roles, units, time conventions, and audit fields used by the PJM PSEG and NYISO Hudson Valley electricity-price forecasting pipelines.
 
