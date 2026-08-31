@@ -51,6 +51,29 @@ Create the Task 7 modeling-ready checkpoint tables with explicit target, predict
 
 Every current selected NYISO forecast uses a ZIP-entry last-modified availability proxy. A proxy is evidence for a feasibility pipeline, not proof of the original publication timestamp.
 
+## 2026-08-31 — Task 7 pre-modeling checkpoint
+
+### What I can explain
+
+- A modeling-ready checkpoint is a validated table contract, not simply a CSV export.
+- Every column must have exactly one role: target, candidate predictor, identifier, audit field, or excluded operational field.
+- Candidate predictors may be supplied to a future model; audit and excluded fields remain in the checkpoint for traceability but must not be supplied to that model.
+- Reopening an exported CSV and checking its columns, row count, unique timestamps, and target values verifies the file on disk rather than only the in-memory DataFrame.
+- A fresh-kernel run proves that the notebook can recreate the checkpoint without relying on previous variables.
+
+### C#/SQL analogy
+
+The role dictionary is like a C# schema contract or a SQL view definition: it explicitly controls which columns may become model inputs. The assertions act like database constraints that reject duplicate keys, missing targets, unclassified fields, and prohibited predictors.
+
+### Verification I reproduced
+
+- PJM checkpoint: 744 rows and 38 classified columns.
+- NYISO checkpoint: 744 rows and 47 classified columns.
+- Both checkpoints: 744 unique ordered target hours and nonmissing targets.
+- Same-hour actual load and observed weather were excluded from candidate predictors.
+- `pytest -v` passed 21 tests and Ruff passed.
+
+
 ## Remaining learning tasks
 
 | Task | I can mark this complete when I can… | Status |
@@ -61,7 +84,7 @@ Every current selected NYISO forecast uses a ZIP-entry last-modified availabilit
 | 4 | explain the common versus market-augmented PJM/NYISO feature sets and why PJM metered load is not a load forecast | Completed |
 | 5 | write tests that fail for leakage, duplicate keys, wrong units, bad cutoffs, and ambiguous latest-vintage ties | Completed |
 | 6 | complete January EDA and distinguish descriptive relationships from operational predictors and final conclusions | Completed |
-| 7 | rebuild the January pre-modeling pipeline in a fresh environment and defend every exported field role | Not started |
+| 7 | rebuild the January pre-modeling pipeline in a fresh environment and defend every exported field role | Complete |
 
 ## Entry template
 
