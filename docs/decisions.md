@@ -18,6 +18,7 @@ Detailed reasoning lives in `docs/methodology_decisions.md`. This table is the d
 | D-010 | 2026-08-24 | Proceed without blocking on unanswered ISO correspondence; keep assumptions conservative, testable, configurable, and explicitly provisional. | Active |
 | D-011 | 2026-08-24 | Complete the seven pre-modeling tasks before baseline model development. | Active |
 | D-014 | 2026-08-29 | For January 2025 NYISO historical-price features, retain a prior-day same-hour price only when its provisional availability time is no later than the target cutoff; compute the 24-hour mean only from those safe lag values. | Active; price-schedule availability is provisional and does not replace the load-forecast proxy warning |
+| D-015 | 2026-08-30 | Apply the same cutoff-safe prior-day price-lag and full-window rolling-feature pattern to PJM PSEG, using the provisional PJM D−1 11:00 America/New_York cutoff. | Active; cutoff and price-schedule availability remain provisional |
 
 When a decision changes, add a new row that identifies the replaced decision rather than silently rewriting the historical rationale.
 
@@ -49,3 +50,18 @@ for auditability rather than as model features.
 
 This decision applies to the January 2025 feasibility sample and must be
 reassessed before extending the analysis to the planned 2020–2024 study period.
+
+## PJM January 2025 historical day-ahead price features
+
+For each PJM PSEG target delivery hour, use the provisional prediction cutoff of D−1 11:00 America/New_York.
+
+Use the same configurable provisional price-schedule availability rule as NYISO: 00:00 America/New_York on the source price’s delivery date. Retain a prior-day same-hour source price only when:
+
+`previous_day_same_hour_price_available_at <= prediction_cutoff`
+
+The approved PJM candidate features are `hour_of_day`, `day_of_week`, `is_weekend`, `day_ahead_price_lag_1d`, and `day_ahead_price_lag_1d_rolling_mean_24h`. Same-hour metered load, observed weather, target components, identifiers, and audit fields remain excluded.
+
+Fresh-kernel January verification produced 744 target hours, zero target-day prices available by cutoff, 720 cutoff-safe prior-day lags, and 697 full-window rolling means. The common PJM/NYISO set differs from the NYISO augmented set only by `load_forecast_mw`.
+
+The PJM cutoff and price-schedule availability rule remain provisional pending authoritative evidence.
+

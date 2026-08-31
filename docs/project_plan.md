@@ -1,8 +1,8 @@
 # Electricity Price Forecasting Capstone — Project Plan
 
-**Last updated:** August 24, 2026  
+**Last updated:** August 30, 2026
 **Current phase:** January 2025 pre-modeling completion gate  
-**Current task:** Task 1 of 7 — validate calendar features in `notebooks/04_feature_engineering.ipynb`
+**Current task:** Task 5 of 7 — expand automated validation
 
 ## How to Use This Document
 
@@ -25,10 +25,10 @@ This file is the authoritative academic and technical roadmap for the capstone. 
 
 Complete these tasks in order. Do not begin model fitting until all seven gates pass.
 
-1. **Validate calendar features in Notebook 04.** From a fresh Python 3.12 kernel, run through the existing feature-role classification and derive `hour_of_day`, `day_of_week`, and `is_weekend` from timezone-aware `timestamp_local`. Prove valid ranges, types, nonmissingness, and candidate-list membership.
-2. **Reconcile the notebook and reusable preprocessing paths.** Make `src/electricity_forecasting/data_processing.py` and configuration use the committed schema (`day_ahead_price_usd_mwh` and `actual_load_mw`), the same NOAA SI-unit interpretation, the same hourly-report selection rule, and the same quality/rejection flags as Notebook 02.
-3. **Implement forecast-origin-aware historical features.** Replace assumptions based only on row position with explicit availability checks relative to each market cutoff. Add price lags and shifted rolling statistics only after tests prove that every source value was knowable at prediction time.
-4. **Complete the comparable PJM feature path.** Use the provisional PJM cutoff of D−1 11:00 America/New_York until authoritative evidence changes it. Exclude same-hour metered load and observed weather. Produce a minimum common feature set for both markets; retain the NYISO load-forecast feature as an explicitly augmented feature until a comparable PJM forecast series is available.
+1. **Complete — validate calendar features in Notebook 04.** Fresh-kernel validation confirmed the derived fields' ranges, types, nonmissingness, weekend logic, and candidate-list membership.
+2. **Complete — reconcile the notebook and reusable preprocessing paths.** The reusable January path now uses the committed schema and matches Notebook 02's SI-unit, report-priority, complete-hourly-index, and weather-audit policies.
+3. **Complete — implement forecast-origin-aware historical features.** Explicit availability checks, cutoff-safe prior-day lags, and full-window rolling statistics are implemented and validated for NYISO. Availability assumptions remain provisional.
+4. **Complete — comparable PJM feature path.** The provisional D−1 11:00 America/New_York cutoff, cutoff-safe historical-price features, excluded same-hour operational fields, and common-versus-NYISO-augmented feature sets are implemented and validated.
 5. **Expand automated validation.** Populate the empty preprocessing and validation test files. Test schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection, tie failure, prohibited-column exclusion, row counts, and absence of future information. Require `pytest` and Ruff to pass.
 6. **Complete and validate Notebook 03 EDA.** Use `notebooks/03_exploratory_analysis.ipynb` and the two committed January processed tables. Keep actual load and observed weather descriptive only, preserve negative and high prices, distinguish feasibility findings from final conclusions, and run from a fresh kernel.
 7. **Create the pre-modeling checkpoint.** Export one validated January modeling-ready table per market with explicit target, candidate, identifier, audit, and excluded-field roles. Require 744 unique target hours, nonmissing targets, no prohibited predictors, successful fresh-process notebook runs, passing tests/Ruff, updated documentation, and a deliberate Git commit.
@@ -159,9 +159,9 @@ These may be discussed as future extensions.
 | PJM PS Hourly Load: Metered         | PJM Data Miner 2      | Feasibility EDA and possible predictor             | Validated but provisional                          |
 | NYISO Hudson Valley Day-Ahead LMP   | NYISO                 | NYISO target variable                              | January sample validated                           |
 | NYISO Hudson Valley integrated load | NYISO                 | Feasibility EDA and possible predictor             | Validated but provisional                          |
-| Newark weather observations         | NOAA                  | PJM-area weather feasibility testing               | January sample cleaned                             |
-| Stewart weather observations        | NOAA                  | NYISO-area weather feasibility testing             | January sample cleaned                             |
-| Calendar variables                  | Derived               | Hour, weekday, month, season, and holiday features | Planned                                            |
+| Newark weather observations         | NOAA                  | PJM-area weather feasibility testing               | January reusable path reconciled; 744 hours        |
+| Stewart weather observations        | NOAA                  | NYISO-area weather feasibility testing             | January reusable path reconciled; 744 hours        |
+| Calendar variables                  | Derived               | Hour, weekday, month, season, and holiday features | Hour/day/weekend validated in Task 1               |
 | Historical day-ahead load forecasts | PJM and NYISO         | Potential final predictor                          | Availability under investigation                   |
 | Historical weather forecasts        | To be determined      | Potential final predictor                          | Availability under investigation                   |
 | Historical price lags               | Derived from LMP data | Final predictor                                    | Planned                                            |
@@ -407,6 +407,15 @@ MAPE will not be a primary metric because electricity prices can be zero or nega
 
 The same evaluation definitions and test periods will be used wherever possible for both markets. Market-specific differences will be documented rather than concealed through forced variable equivalence.
 
+### 13.6 Planned Ablation and Error-Regime Analyses
+
+The final model-comparison deliverables will include two additions that improve interpretation without expanding the primary model families:
+
+- **Feature ablation:** compare the common calendar-and-availability-safe-price-history feature set with the NYISO augmented set that additionally includes `load_forecast_mw`. Use the same model, chronological split, and metric definitions for both runs. Label the NYISO result as conditional because its forecast availability is currently supported by a ZIP-entry proxy.
+- **Error by regime:** report MAE and RMSE by hour of day, weekday versus weekend, and normal-price versus extreme-price regimes. Define any regime threshold using training data only and preserve negative and high prices.
+
+If time permits after the primary comparison is complete, add feature-importance stability across rolling validation folds and a concise bounded-tuning diagnostic. Do not add new model families or use the final test set for these decisions.
+
 ---
 
 ## 14. Completed Work
@@ -639,17 +648,16 @@ Every source used in the final paper must be recorded with sufficient informatio
 
 ## 21. Immediate Next Task
 
-Complete Task 1 only in `notebooks/04_feature_engineering.ipynb`:
+Complete Task 3 only: implement forecast-origin-aware historical price features.
 
-1. Restart with the Python 3.12 project kernel.
-2. Run from the top through Step 7.
-3. Derive `hour_of_day`, `day_of_week`, and `is_weekend` from timezone-aware `timestamp_local`.
-4. Prove ranges, Boolean logic, nonmissingness, and candidate-list membership.
-5. Rerun the feature-role overlap and prohibited-predictor assertions.
-6. Run `pytest` and `ruff check src tests`.
-7. Record the evidence in `docs/current_status.md` and `docs/learning_log.md`.
+1. Define each market's provisional prediction cutoff and an availability timestamp for every proposed lag or rolling source value.
+2. Prove each source value was available at or before the target hour's cutoff; chronological row position alone is insufficient.
+3. Add only availability-safe price lags and shifted rolling statistics.
+4. Add tests for post-cutoff values, missing elapsed hours, and target leakage in rolling windows.
+5. Preserve the NYISO ZIP-entry availability-proxy warning and provisional PJM D−1 11:00 / NYISO D−1 05:00 cutoffs.
+6. Run fresh-process validation, `pytest`, and `ruff check src tests`.
 
-Do not create modeling-ready CSV files or train models during Task 1.
+Do not create Task 7 modeling-ready CSV files or train models during Task 3.
 
 ---
 
@@ -705,13 +713,13 @@ The project will be considered complete when:
 
 **Current phase:** January 2025 pre-modeling completion gate.
 
-**Verified checkpoint:** Notebook 02 has two 744-row processed electricity tables and a 4,464-row NYISO forecast-vintage table. Notebook 04 Steps 1–7 are complete, including latest-eligible NYISO vintage selection, one-to-one merge, column-role classification, and leakage safeguards.
+**Verified checkpoint:** Notebook 02 has two 744-row processed electricity tables and a 4,464-row NYISO forecast-vintage table. Notebook 04 Steps 1–7 and calendar validation are complete. The reusable January preprocessing path has been reconciled and tested against Notebook 02's canonical schema and weather policies.
 
-**Current working notebook:** `notebooks/04_feature_engineering.ipynb`.
+**Current working implementation:** `notebooks/04_feature_engineering.ipynb` and `src/electricity_forecasting/feature_engineering.py`.
 
-**Exact next task:** Task 1 — fresh-kernel calendar-feature validation.
+**Exact next task:** Task 3 — forecast-origin-aware historical features.
 
-**Primary limitations:** NYISO availability uses a ZIP timestamp proxy; preprocessing modules and notebook policy must be reconciled; PJM lacks a verified comparable load-forecast vintage series; forecast-origin-aware lags are not yet complete.
+**Primary limitations:** NYISO availability uses a ZIP timestamp proxy; PJM lacks a verified comparable load-forecast vintage series; forecast-origin-aware lags are not yet complete; and NOAA raw timestamp handling needs DST validation before the multi-year expansion.
 
 **Pre-modeling exit:** all seven authoritative tasks pass, January modeling-ready tables are validated, notebooks run fresh, tests/Ruff pass, and documentation matches the implementation.
 

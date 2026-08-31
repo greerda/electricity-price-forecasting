@@ -1,6 +1,6 @@
 # Data Dictionary
 
-**Last updated:** August 29, 2026
+**Last updated:** August 30, 2026
 
 The committed January processed tables define the canonical preprocessing schema. Field eligibility is a separate question from field presence.
 
@@ -67,7 +67,7 @@ The committed January processed tables define the canonical preprocessing schema
 
 ## Derived cutoff-safe price features
 
-The following January 2025 NYISO fields use a configurable, provisional rule that a day-ahead price schedule becomes available at 00:00 America/New_York on its delivery date. This is distinct from, and does not remove, the NYISO load-forecast ZIP-entry availability-proxy warning.
+The following January 2025 NYISO and PJM fields use a configurable, provisional rule that a day-ahead price schedule becomes available at 00:00 America/New_York on its delivery date. Each market then compares that availability time with its own provisional D−1 prediction cutoff: 05:00 for NYISO and 11:00 for PJM. This is distinct from, and does not remove, the NYISO load-forecast ZIP-entry availability-proxy warning.
 
 | Column | Type/unit | Meaning | Model role |
 |---|---|---|---|
