@@ -17,6 +17,25 @@ This file records what the student can now explain and reproduce, not merely wha
 - Why same-hour actual load, observed weather, and target components can leak target-time information.
 - Why audit and identifier fields travel with a modeling table but must not be supplied to a model.
 
+## 2026-08-31 — Automated validation and January EDA
+
+### Work completed
+
+- Added automated tests for canonical schemas, timestamp order and uniqueness, missing hours, missing targets, prohibited predictors, calendar ranges, cutoff eligibility, and forecast-vintage tie handling.
+- Completed descriptive EDA for the January 2025 PJM PSEG and NYISO Hudson Valley feasibility tables.
+- Verified that same-hour actual load and observed weather are descriptive only and not operational day-ahead predictors.
+
+### What I learned
+
+- A test should verify both rejection of invalid data and acceptance of valid data.
+- A latest-eligible forecast must be selected by availability time before the prediction cutoff, and tied latest rows should fail rather than be chosen arbitrarily.
+- Mean and median can tell different stories when electricity-price spikes create right-skewed distributions.
+- Correlation describes association, not causation or operational feature availability.
+
+### Next single action
+
+Create the Task 7 modeling-ready checkpoint tables with explicit target, predictor, identifier, audit, and excluded-field roles.
+
 ### Evidence already reproduced
 
 - 744 PJM processed hours.
@@ -26,7 +45,7 @@ This file records what the student can now explain and reproduce, not merely wha
 - 744 latest-eligible NYISO selections.
 - One-to-one NYISO forecast/electricity merge.
 - Passing feature-role overlap/prohibited-field assertions.
-- Three passing tests and passing Ruff checks.
+- Twenty-one passing tests and passing Ruff checks.
 
 ### Limitation I must remember
 
@@ -38,10 +57,10 @@ Every current selected NYISO forecast uses a ZIP-entry last-modified availabilit
 |---:|---|---|
 | 1 | derive and validate hour/day/weekend fields from a timezone-aware Series without copying the project code | Complete |
 | 2 | reconcile two competing schemas and explain the NOAA unit/hourly-selection decision | Complete |
-| 3 | design a lag/rolling feature whose source values are provably available at the forecast origin | Not started |
-| 4 | explain the common versus market-augmented PJM/NYISO feature sets and why PJM metered load is not a load forecast | Not started |
-| 5 | write tests that fail for leakage, duplicate keys, wrong units, bad cutoffs, and ambiguous latest-vintage ties | Not started |
-| 6 | complete January EDA and distinguish descriptive relationships from operational predictors and final conclusions | Not started |
+| 3 | design a lag/rolling feature whose source values are provably available at the forecast origin | Completed |
+| 4 | explain the common versus market-augmented PJM/NYISO feature sets and why PJM metered load is not a load forecast | Completed |
+| 5 | write tests that fail for leakage, duplicate keys, wrong units, bad cutoffs, and ambiguous latest-vintage ties | Completed |
+| 6 | complete January EDA and distinguish descriptive relationships from operational predictors and final conclusions | Completed |
 | 7 | rebuild the January pre-modeling pipeline in a fresh environment and defend every exported field role | Not started |
 
 ## Entry template
@@ -87,7 +106,7 @@ I can derive `hour_of_day`, `day_of_week`, and `is_weekend` from the timezone-aw
 This is like adding computed columns to a SQL query from a typed `DateTimeOffset` value: extract the local hour and weekday first, then derive a Boolean weekend field from the weekday. The important rule is to use the market-local timestamp, not a UTC clock value that could assign a market hour to the wrong calendar day.
 
 **Remaining limitation:**
-The reusable calendar helper currently uses legacy field names and an integer weekend indicator; reconciling it with the validated Notebook 04 contract is part of Task 2.
+The reusable calendar helper now uses the canonical `hour_of_day` field name. It retains an integer weekend indicator, which is appropriate for the current feature-engineering implementation and separately tested from the Notebook 04 validation.
 
 **Next single action:**
 Compare the Notebook 02 preprocessing workflow with the reusable preprocessing modules and identify the first schema mismatch.
@@ -111,6 +130,10 @@ January has no daylight-saving transition. Resolve the raw NOAA fixed-standard-t
 
 **Next single action:**
 For one target market-hour, identify the forecast cutoff and prove whether a proposed historical price value was available by that cutoff.
+
+## Planned model-comparison learning
+
+Before final model selection, I will be able to explain why a feature-ablation comparison must keep the model, chronological split, and metrics fixed while changing only the feature set. I will also be able to explain why error should be reported by price regime as well as overall MAE and RMSE, without deleting or redefining legitimate negative and high prices.
 
 ## 2026-08-21 — External responses and forecast timing
 
