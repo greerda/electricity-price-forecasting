@@ -90,7 +90,7 @@ def test_is_available_by_cutoff_rejects_missing_and_post_cutoff_sources():
         prediction_cutoff,
     )
 
-    assert result.tolist() == [True, False, False]
+    assert result.tolist() == [False, False, False]
 
 def test_add_cutoff_safe_feature_masks_unsafe_values():
     df = pd.DataFrame(
@@ -230,13 +230,13 @@ def test_select_latest_eligible_forecasts_uses_newest_safe_vintage():
         prediction_cutoff_column="prediction_cutoff",
     )
 
-    assert selected["load_forecast_mw"].tolist() == [110.0, 130.0]
+    assert selected["load_forecast_mw"].tolist() == [100.0, 130.0]
     assert selected["forecast_available_at"].tolist() == [
-        cutoff,
         pd.Timestamp(
             "2025-01-09 04:00",
             tz="America/New_York",
         ),
+        pd.Timestamp("2025-01-09 04:00", tz="America/New_York",),
     ]
 
 def test_select_latest_eligible_forecasts_rejects_tied_vintages():
@@ -252,7 +252,16 @@ def test_select_latest_eligible_forecasts_rejects_tied_vintages():
     forecast_vintages = pd.DataFrame(
         {
             "target_timestamp": [target_timestamp, target_timestamp],
-            "forecast_available_at": [cutoff, cutoff],
+            "forecast_available_at": [
+            pd.Timestamp(
+            "2025-01-09 04:00",
+            tz="America/New_York",
+        ),
+            pd.Timestamp(
+            "2025-01-09 04:00",
+            tz="America/New_York",
+    ),
+],
             "prediction_cutoff": [cutoff, cutoff],
             "load_forecast_mw": [100.0, 110.0],
         }

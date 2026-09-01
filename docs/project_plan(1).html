@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>project_plan(1</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="project_plan(1)_files/libs/clipboard/clipboard.min.js"></script>
+<script src="project_plan(1)_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="project_plan(1)_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="project_plan(1)_files/libs/quarto-html/popper.min.js"></script>
+<script src="project_plan(1)_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="project_plan(1)_files/libs/quarto-html/anchor.min.js"></script>
+<link href="project_plan(1)_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="project_plan(1)_files/libs/quarto-html/quarto-syntax-highlighting-adfb2833bc15652ec5881dc6381ea988.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="project_plan(1)_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="project_plan(1)_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="project_plan(1)_files/libs/bootstrap/bootstrap-efbb37e9afcc02144ebbc7afd12a776f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="electricity-price-forecasting-capstone-project-plan" class="level1">
+<h1>Electricity Price Forecasting Capstone — Project Plan</h1>
+<p><strong>Last updated:</strong> August 21, 2026<br>
+<strong>Current phase:</strong> January 2025 leakage-safe feature engineering<br>
+<strong>Current task:</strong> Complete feature-role classification after the NYISO forecast merge in <code>notebooks/04_feature_engineering.ipynb</code></p>
+<section id="how-to-use-this-document" class="level2">
+<h2 class="anchored" data-anchor-id="how-to-use-this-document">How to use this document</h2>
+<p>This file is the authoritative academic and technical roadmap for the capstone. It records scope, methodology, milestones, risks, dependencies, future actions, schedule, and completion criteria.</p>
+<ul>
+<li>Use <code>current_status.md</code> for the short, frequently updated IDE-agent handoff.</li>
+<li>Use <code>docs/methodology_decisions.md</code> for the detailed rationale and status of methodological decisions.</li>
+<li>Use <code>docs/data_source_register.md</code> for dataset, documentation, correspondence, and source limitations.</li>
+<li>Use <code>docs/data_dictionary.md</code> for field definitions, units, time conventions, and modeling roles.</li>
+<li>Use <code>docs/notebook_pipeline_map.md</code> for the high-level notebook and source-code flow.</li>
+<li>Use <code>AGENTS.md</code> for stable instructions governing coding-agent behavior.</li>
+<li>Update this plan whenever a milestone, dependency, source decision, study-period decision, or scope item changes.</li>
+</ul>
+</section>
+<section id="project-overview" class="level2">
+<h2 class="anchored" data-anchor-id="project-overview">1. Project overview</h2>
+<p>This graduate data-science capstone will develop, evaluate, and compare models for forecasting hourly day-ahead electricity prices in two organized wholesale electricity markets:</p>
+<ul>
+<li>PJM PSEG pricing zone; and</li>
+<li>NYISO Hudson Valley Zone G.</li>
+</ul>
+<p>The project compares statistical baselines, regularized regression, Random Forest, and gradient-boosted tree models using predictors that can be demonstrated to have been available before the applicable market cutoff.</p>
+<p>January 2025 is the feasibility and pipeline-development sample. The planned primary study period is January 1, 2020 through December 31, 2024, subject to the future validation actions in this plan.</p>
+</section>
+<section id="working-research-question" class="level2">
+<h2 class="anchored" data-anchor-id="working-research-question">2. Working research question</h2>
+<blockquote class="blockquote">
+<p>How accurately can statistical and machine-learning models forecast hourly day-ahead electricity prices, and how does predictive performance differ between PJM PSEG and NYISO Hudson Valley Zone G?</p>
+</blockquote>
+<p>The research question does not need to change because of the PJM, NYISO, or NOAA responses.</p>
+</section>
+<section id="supporting-research-questions" class="level2">
+<h2 class="anchored" data-anchor-id="supporting-research-questions">3. Supporting research questions</h2>
+<ol type="1">
+<li>Which forecasting model produces the lowest chronological out-of-sample error in each market?</li>
+<li>Does the best-performing model differ between PJM and NYISO?</li>
+<li>How does forecasting accuracy vary by hour, weekday, season, price level, and market condition?</li>
+<li>How well do relatively simple baselines and regularized linear models perform compared with tree-based models?</li>
+<li>How do models perform during negative-price and unusually high-price periods?</li>
+<li>How do differences in forecast areas, data availability, and market design affect comparison of the two markets?</li>
+<li>How much performance changes when only operationally available predictors are used rather than same-hour observed variables?</li>
+</ol>
+</section>
+<section id="academic-and-practical-significance" class="level2">
+<h2 class="anchored" data-anchor-id="academic-and-practical-significance">4. Academic and practical significance</h2>
+<p>Day-ahead electricity prices affect generators, utilities, energy traders, large consumers, and market operators. Prices are difficult to predict because they depend on time-sensitive demand, weather, generation availability, congestion, fuel costs, transmission constraints, and market-specific rules.</p>
+<p>Comparing PJM and NYISO demonstrates practical data-science skills in:</p>
+<ul>
+<li>data acquisition and source validation;</li>
+<li>time-series cleaning and quality control;</li>
+<li>timestamp and timezone management;</li>
+<li>forecast-vintage reconstruction;</li>
+<li>exploratory data analysis;</li>
+<li>leakage-safe feature engineering;</li>
+<li>chronological validation;</li>
+<li>regression and tree-based modeling;</li>
+<li>cross-market comparison;</li>
+<li>reproducible research;</li>
+<li>technical documentation; and</li>
+<li>communication through a final paper, presentation, and optional dashboard.</li>
+</ul>
+</section>
+<section id="project-scope" class="level2">
+<h2 class="anchored" data-anchor-id="project-scope">5. Project scope</h2>
+<section id="markets-locations-and-targets" class="level3">
+<h3 class="anchored" data-anchor-id="markets-locations-and-targets">5.1 Markets, locations, and targets</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Market</th>
+<th>Selected location</th>
+<th>Confirmed identifier</th>
+<th>Price target</th>
+<th>Unit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>PJM</td>
+<td>PSEG zone</td>
+<td>Pnode <code>51301</code>; load area <code>PS</code></td>
+<td><code>total_lmp_da</code></td>
+<td><code>$/MWh</code></td>
+</tr>
+<tr class="even">
+<td>NYISO</td>
+<td>Hudson Valley Zone G</td>
+<td><code>HUD VL</code>, PTID <code>61758</code></td>
+<td><code>LBMP ($/MWHr)</code></td>
+<td><code>$/MWh</code></td>
+</tr>
+</tbody>
+</table>
+<p>PJM confirmed the PSEG/PS pairing. NYISO confirmed PTID <code>61758</code> for both Hudson Valley zonal day-ahead LBMP and actual zonal load.</p>
+<p><code>total_lmp_da</code> and NYISO LBMP are treated as complete price targets. Component fields are retained for audit and explanation but are not added to the already complete target.</p>
+</section>
+<section id="unit-of-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="unit-of-analysis">5.2 Unit of analysis</h3>
+<p>One target delivery hour per market.</p>
+<p>PJM and NYISO will be modeled separately. Performance will then be compared using consistent metrics and aligned evaluation periods where possible.</p>
+</section>
+<section id="feasibility-period" class="level3">
+<h3 class="anchored" data-anchor-id="feasibility-period">5.3 Feasibility period</h3>
+<p>January 1–31, 2025.</p>
+<p>Each market contains 744 unique hourly target observations during the pilot period.</p>
+</section>
+<section id="planned-primary-study-period" class="level3">
+<h3 class="anchored" data-anchor-id="planned-primary-study-period">5.4 Planned primary study period</h3>
+<p>January 1, 2020 through December 31, 2024.</p>
+<p>This period is the working final scope. Before bulk modeling, the pipeline must validate:</p>
+<ul>
+<li>PSEG node <code>51301</code> continuity;</li>
+<li><code>PS</code> load-area continuity;</li>
+<li>PJM MIDATL historical forecast coverage;</li>
+<li>NYISO PTID <code>61758</code> continuity;</li>
+<li>NYISO forecast-vintage availability timestamps;</li>
+<li>daylight-saving transition behavior;</li>
+<li>NOAA station histories;</li>
+<li>annual feed schemas, units, revisions, and missingness; and</li>
+<li>possible structural breaks, including PJM fast-start pricing effective September 1, 2021.</li>
+</ul>
+</section>
+<section id="forecast-origins" class="level3">
+<h3 class="anchored" data-anchor-id="forecast-origins">5.5 Forecast origins</h3>
+<p>The project predicts all 24 hours of the next operating day using only information available before the applicable market cutoff.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Market</th>
+<th>Market cutoff</th>
+<th>Project eligibility rule</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>PJM</td>
+<td>11:00 a.m. EPT on the day before delivery</td>
+<td>Availability strictly before 11:00 a.m.</td>
+<td>Adopted; PJM implementation pending</td>
+</tr>
+<tr class="even">
+<td>NYISO</td>
+<td>5:00 a.m. EPT on the day before delivery</td>
+<td>Availability strictly before 5:00 a.m.</td>
+<td>Adopted for the January pipeline</td>
+</tr>
+</tbody>
+</table>
+<p>The strict “before” rule is deliberately conservative. A source timestamped exactly at the cutoff is excluded unless future authoritative evidence proves it was available beforehand.</p>
+</section>
+<section id="out-of-scope-primary-items" class="level3">
+<h3 class="anchored" data-anchor-id="out-of-scope-primary-items">5.6 Out-of-scope primary items</h3>
+<p>The primary capstone will not require:</p>
+<ul>
+<li>real-time streaming infrastructure;</li>
+<li>causal inference;</li>
+<li>retrieval-augmented generation;</li>
+<li>large language models;</li>
+<li>multiple pricing locations per market;</li>
+<li>extensive cloud production architecture;</li>
+<li>neural networks such as LSTM or GRU; or</li>
+<li>price-spike classification.</li>
+</ul>
+<p>These may be discussed as future extensions after the academic requirements are complete.</p>
+</section>
+</section>
+<section id="data-sources-and-current-determinations" class="level2">
+<h2 class="anchored" data-anchor-id="data-sources-and-current-determinations">6. Data sources and current determinations</h2>
+<p>Detailed source metadata belong in <code>docs/data_source_register.md</code>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Data family</th>
+<th>Current source</th>
+<th>Current determination</th>
+<th>Remaining action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>PJM price</td>
+<td><code>da_hrl_lmps</code> January pilot</td>
+<td>PSEG node <code>51301</code>; <code>total_lmp_da</code> is the target</td>
+<td>Decide whether final history uses or is reconciled against <code>rt_da_monthly_lmps</code></td>
+</tr>
+<tr class="even">
+<td>PJM actual load</td>
+<td><code>hrl_load_metered</code></td>
+<td><code>PS</code> pairs with PSEG; target-hour actual load is EDA-only</td>
+<td>Validate all study years and use only safe lags if modeled</td>
+</tr>
+<tr class="odd">
+<td>PJM load forecast</td>
+<td><code>load_frcstd_hist</code></td>
+<td>Use <code>MIDATL</code>; six-hour snapshots; evaluated time is generated-and-available time</td>
+<td>Implement strict pre-11:00 a.m. latest-vintage selection</td>
+</tr>
+<tr class="even">
+<td>NYISO price</td>
+<td>MIS day-ahead LBMP</td>
+<td>Use <code>HUD VL</code>, PTID <code>61758</code></td>
+<td>Acquire and validate 2020–2024 files</td>
+</tr>
+<tr class="odd">
+<td>NYISO actual load</td>
+<td>Integrated zonal load</td>
+<td>Use <code>HUD VL</code>, PTID <code>61758</code>; target-hour actual load is EDA-only</td>
+<td>Validate all study years and safe-lag rules</td>
+</tr>
+<tr class="even">
+<td>NYISO load forecast</td>
+<td>ISO Load Forecast archive and Custom Reports</td>
+<td>January selection implemented; availability uses ZIP metadata proxy</td>
+<td>Validate authoritative publication time before final use</td>
+</tr>
+<tr class="odd">
+<td>Newark weather</td>
+<td>NOAA LCDv2 station <code>USW00014734</code></td>
+<td>Appropriate point observation with geographic limitation</td>
+<td>Acquire 2020–2024; audit HOMR and apply fixed-standard-time rule</td>
+</tr>
+<tr class="even">
+<td>Stewart weather</td>
+<td>NOAA LCDv2 station <code>USW00014714</code></td>
+<td>Appropriate point observation with geographic limitation</td>
+<td>Acquire 2020–2024; audit HOMR and physical outliers</td>
+</tr>
+<tr class="odd">
+<td>Archived weather forecast</td>
+<td>NOAA/NWS SRRS, NOAAPort, FPUS5, FXUS6 candidates</td>
+<td>No structured hourly modeling source approved</td>
+<td>Investigate reproducible issuance/valid-time extraction or exclude from core model</td>
+</tr>
+<tr class="even">
+<td>Calendar variables</td>
+<td>Derived</td>
+<td>Approved</td>
+<td>Document holiday calendar and cyclical encodings</td>
+</tr>
+<tr class="odd">
+<td>Historical price features</td>
+<td>Derived from target feeds</td>
+<td>Approved in principle</td>
+<td>Implement forecast-origin-aware lags and rolling windows</td>
+</tr>
+<tr class="even">
+<td>Natural-gas price</td>
+<td>Undetermined</td>
+<td>Optional</td>
+<td>Include only if timing, coverage, and effort are acceptable</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="current-repository-structure" class="level2">
+<h2 class="anchored" data-anchor-id="current-repository-structure">7. Current repository structure</h2>
+<p>Expected major files include:</p>
+<pre class="text"><code>AGENTS.md
+PROJECT_PLAN.md
+current_status.md
+pyproject.toml
+
+notebooks/
+├── 01_data_inventory.ipynb
+├── 02_data_cleaning.ipynb
+├── 03_exploratory_data_analysis.ipynb
+├── 04_feature_engineering.ipynb
+├── 05_baseline_models.ipynb
+└── 06_model_comparison.ipynb
+
+src/electricity_forecasting/
+├── __init__.py
+├── data_processing.py
+└── feature_engineering.py
+
+docs/
+├── data_dictionary.md
+├── data_source_register.md
+├── methodology_decisions.md
+├── notebook_pipeline_map.md
+├── learning_log.md
+└── textbook_notes/
+
+data/
+├── raw/
+├── interim/
+└── processed/
+
+outputs/
+├── metrics/
+├── models/
+└── predictions/
+
+reports/
+├── capstone.qmd
+├── figures/
+├── tables/
+└── references.bib</code></pre>
+<p>Private correspondence and restricted reference materials must remain outside the public repository or in a gitignored private reference location.</p>
+</section>
+<section id="january-2025-feasibility-results" class="level2">
+<h2 class="anchored" data-anchor-id="january-2025-feasibility-results">8. January 2025 feasibility results</h2>
+<section id="electricity-validation" class="level3">
+<h3 class="anchored" data-anchor-id="electricity-validation">8.1 Electricity validation</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Validation check</th>
+<th style="text-align: right;">PJM</th>
+<th style="text-align: right;">NYISO</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Hourly target rows</td>
+<td style="text-align: right;">744</td>
+<td style="text-align: right;">744</td>
+</tr>
+<tr class="even">
+<td>Unique hourly timestamps</td>
+<td style="text-align: right;">Yes</td>
+<td style="text-align: right;">Yes</td>
+</tr>
+<tr class="odd">
+<td>Missing price values</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td>Missing actual-load values</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td>Matched price/load rows</td>
+<td style="text-align: right;">744</td>
+<td style="text-align: right;">744</td>
+</tr>
+</tbody>
+</table>
+<p>The January electricity tables are suitable for pipeline development, EDA, feature-engineering tests, and baseline-code tests. They are not the final modeling datasets.</p>
+</section>
+<section id="weather-validation" class="level3">
+<h3 class="anchored" data-anchor-id="weather-validation">8.2 Weather validation</h3>
+<p>Earlier January processing produced:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Validation check</th>
+<th style="text-align: right;">Newark</th>
+<th style="text-align: right;">Stewart</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Output hourly rows</td>
+<td style="text-align: right;">744</td>
+<td style="text-align: right;">744</td>
+</tr>
+<tr class="even">
+<td>Incomplete hours</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr class="odd">
+<td>Clearly corrupted observations rejected</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr class="even">
+<td>Future-looking interpolation</td>
+<td style="text-align: right;">No</td>
+<td style="text-align: right;">No</td>
+</tr>
+</tbody>
+</table>
+<p>The full NOAA review added several requirements:</p>
+<ul>
+<li>filter the station-year file by timestamp rather than filename;</li>
+<li>use fixed Local Standard Time for raw <code>DATE</code> conversion;</li>
+<li>use <code>FM-15</code> as the primary routine source;</li>
+<li>exclude daily/monthly summaries and <code>FM-12</code> from the primary series;</li>
+<li>use <code>FM-16</code> only as a documented fallback;</li>
+<li>preserve quality indicators and raw <code>REM</code> text;</li>
+<li>distinguish blank, zero, trace, suspect, and erroneous values; and</li>
+<li>apply project-level physical plausibility checks.</li>
+</ul>
+<p><strong>Future action:</strong> Re-run the January weather cleaning after confirming that every requirement above is implemented consistently in <code>data_processing.py</code> and the notebook.</p>
+</section>
+<section id="nyiso-load-forecast-feasibility" class="level3">
+<h3 class="anchored" data-anchor-id="nyiso-load-forecast-feasibility">8.3 NYISO load-forecast feasibility</h3>
+<ul>
+<li>4,464 forecast-vintage/target-hour rows were retained.</li>
+<li>The vintages cover 744 unique January target hours.</li>
+<li>A 5:00 a.m. day-before-delivery cutoff was constructed.</li>
+<li>Post-cutoff vintages were excluded.</li>
+<li>Exactly one latest eligible forecast was selected per target hour.</li>
+<li>The selected forecasts merged one-to-one with the 744-row NYISO electricity table.</li>
+<li>Forecast timing and provenance fields were retained.</li>
+<li>The availability timestamp is currently a ZIP-entry last-modified proxy.</li>
+</ul>
+<p>The workflow proves that the vintage-selection pipeline works. It does not yet prove that the proxy represents the original public availability time for the full study period.</p>
+<p>The NYISO training timeline places the NYISO Load Forecast posting after the 5:00 a.m. Day-Ahead Market close. The operational experiment must therefore use an earlier version demonstrably published before 5:00 a.m.; a later same-day posting is ineligible even if it forecasts the correct delivery hours.</p>
+</section>
+</section>
+<section id="methodological-decisions" class="level2">
+<h2 class="anchored" data-anchor-id="methodological-decisions">9. Methodological decisions</h2>
+<p>The full rationale belongs in <code>docs/methodology_decisions.md</code>. The controlling decisions are:</p>
+<ul>
+<li>Use UTC as the canonical join and modeling key.</li>
+<li>Retain timezone-aware market-local timestamps for interpretation and calendar features.</li>
+<li>Treat raw NOAA LCDv2 timestamps as fixed Local Standard Time before UTC conversion.</li>
+<li>Use market-specific day-ahead forecast origins.</li>
+<li>Exclude any predictor not demonstrably available before its market cutoff.</li>
+<li>Use MIDATL as a PJM regional load-forecast proxy, not as PSEG-specific load.</li>
+<li>Treat the NYISO archive last-modified timestamp as a proxy pending validation.</li>
+<li>Exclude same-hour actual load from operational models.</li>
+<li>Exclude same-hour observed weather from operational models.</li>
+<li>Retain actual load and observed weather for EDA or explicitly non-operational analyses.</li>
+<li>Shift before calculating rolling features.</li>
+<li>Do not randomly shuffle time-series observations.</li>
+<li>Fit preprocessing on training data only.</li>
+<li>Preserve an untouched final test period.</li>
+<li>Retain negative prices and genuine price spikes.</li>
+<li>Keep raw datasets immutable.</li>
+<li>Regenerate processed data reproducibly.</li>
+<li>Keep private correspondence out of the public repository.</li>
+</ul>
+</section>
+<section id="predictor-status" class="level2">
+<h2 class="anchored" data-anchor-id="predictor-status">10. Predictor status</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Predictor</th>
+<th>Status</th>
+<th>Market-specific rule</th>
+<th>Future action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Hour, weekday, weekend, month, season</td>
+<td>Approved</td>
+<td>Known in advance</td>
+<td>Implement and test cyclical encodings</td>
+</tr>
+<tr class="even">
+<td>Holiday indicator</td>
+<td>Approved in principle</td>
+<td>Known in advance</td>
+<td>Select and cite a holiday calendar</td>
+</tr>
+<tr class="odd">
+<td>Historical day-ahead price lags</td>
+<td>Approved in principle</td>
+<td>Must be available for all 24 forecasted hours</td>
+<td>Implement forecast-origin-aware lags</td>
+</tr>
+<tr class="even">
+<td>Backward-looking price windows</td>
+<td>Approved in principle</td>
+<td>Shift before rolling</td>
+<td>Add automated leakage tests</td>
+</tr>
+<tr class="odd">
+<td>NYISO <code>load_forecast_mw</code></td>
+<td>Conditional pilot predictor</td>
+<td>Latest eligible vintage strictly before 5:00 a.m.</td>
+<td>Validate authoritative availability timestamp</td>
+</tr>
+<tr class="even">
+<td>PJM MIDATL forecast</td>
+<td>Approved candidate; pending implementation</td>
+<td>Latest six-hour snapshot strictly before 11:00 a.m.</td>
+<td>Build and validate the PJM pipeline</td>
+</tr>
+<tr class="odd">
+<td>Same-hour actual load</td>
+<td>Excluded operationally</td>
+<td>EDA or safe lag only</td>
+<td>Document any lag before use</td>
+</tr>
+<tr class="even">
+<td>Same-hour observed weather</td>
+<td>Excluded operationally</td>
+<td>EDA or upper-bound model only</td>
+<td>Keep out of the core predictor list</td>
+</tr>
+<tr class="odd">
+<td>Lagged observed weather</td>
+<td>Conditional</td>
+<td>Lag must guarantee pre-cutoff availability</td>
+<td>Define and test exact lag</td>
+</tr>
+<tr class="even">
+<td>Archived weather forecast</td>
+<td>Under investigation</td>
+<td>Must preserve issue time, valid time, and vintage</td>
+<td>Decide feasibility before final feature approval</td>
+</tr>
+<tr class="odd">
+<td>Natural-gas price</td>
+<td>Optional</td>
+<td>Publication timing must be documented</td>
+<td>Include only if scope permits</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="planned-models" class="level2">
+<h2 class="anchored" data-anchor-id="planned-models">11. Planned models</h2>
+<p>Primary comparison:</p>
+<ol type="1">
+<li>historical-average and/or persistence baseline;</li>
+<li>regularized linear regression, such as Ridge or Elastic Net;</li>
+<li>Random Forest regression; and</li>
+<li>gradient-boosted tree regression, such as XGBoost.</li>
+</ol>
+<p>A simple unregularized linear regression may be included as an interpretable reference.</p>
+<p>Neural networks are not required to answer the research question and remain outside the primary scope.</p>
+</section>
+<section id="feature-engineering-plan" class="level2">
+<h2 class="anchored" data-anchor-id="feature-engineering-plan">12. Feature-engineering plan</h2>
+<section id="price-history-features" class="level3">
+<h3 class="anchored" data-anchor-id="price-history-features">12.1 Price-history features</h3>
+<ul>
+<li>same-hour previous-day price;</li>
+<li>same-hour previous-week price;</li>
+<li>earlier prices demonstrably available at the forecast origin;</li>
+<li>shifted rolling mean, standard deviation, minimum, and maximum; and</li>
+<li>recent price-change indicators.</li>
+</ul>
+<p>Every feature must document its source, lag, rolling window, forecast origin, and availability rule.</p>
+</section>
+<section id="calendar-features" class="level3">
+<h3 class="anchored" data-anchor-id="calendar-features">12.2 Calendar features</h3>
+<ul>
+<li>target hour;</li>
+<li>weekday;</li>
+<li>weekend indicator;</li>
+<li>holiday indicator;</li>
+<li>month;</li>
+<li>season; and</li>
+<li>sine/cosine cyclical encodings.</li>
+</ul>
+</section>
+<section id="load-features" class="level3">
+<h3 class="anchored" data-anchor-id="load-features">12.3 Load features</h3>
+<ul>
+<li>selected NYISO Hudson Valley historical forecast, conditional on timestamp validation;</li>
+<li>selected PJM MIDATL forecast;</li>
+<li>safe lagged actual-load features if justified; and</li>
+<li>forecast ramp or change indicators derived only from eligible forecasts.</li>
+</ul>
+</section>
+<section id="weather-features" class="level3">
+<h3 class="anchored" data-anchor-id="weather-features">12.4 Weather features</h3>
+<ul>
+<li>archived temperature forecast if reproducibly available before cutoff;</li>
+<li>archived humidity or dew-point forecast if reproducibly available;</li>
+<li>archived wind forecast if reproducibly available;</li>
+<li>heating/cooling transformations derived only from safe inputs; and</li>
+<li>sufficiently lagged observations if archived forecasts are not feasible.</li>
+</ul>
+<p>Same-hour observed weather will not be part of the operational core feature set.</p>
+</section>
+<section id="audit-only-fields" class="level3">
+<h3 class="anchored" data-anchor-id="audit-only-fields">12.5 Audit-only fields</h3>
+<p>Cutoff timestamps, forecast availability timestamps, lead times, source archives, source files, revision numbers, proxy indicators, and quality flags are retained for validation but excluded from the default predictor matrix.</p>
+</section>
+</section>
+<section id="validation-and-evaluation-strategy" class="level2">
+<h2 class="anchored" data-anchor-id="validation-and-evaluation-strategy">13. Validation and evaluation strategy</h2>
+<section id="chronological-splitting" class="level3">
+<h3 class="anchored" data-anchor-id="chronological-splitting">13.1 Chronological splitting</h3>
+<p>Candidate final split:</p>
+<ul>
+<li>training: 2020–2022;</li>
+<li>validation and tuning: 2023; and</li>
+<li>final untouched test: 2024.</li>
+</ul>
+<p>The exact split will be finalized after source coverage and structural changes are validated.</p>
+<p>Random train/test splitting is prohibited.</p>
+</section>
+<section id="cross-validation" class="level3">
+<h3 class="anchored" data-anchor-id="cross-validation">13.2 Cross-validation</h3>
+<p>Use rolling-origin or expanding-window validation. Every training window must occur before its corresponding validation window.</p>
+</section>
+<section id="preprocessing-controls" class="level3">
+<h3 class="anchored" data-anchor-id="preprocessing-controls">13.3 Preprocessing controls</h3>
+<ul>
+<li>Fit imputation on training data only.</li>
+<li>Fit scaling on training data only.</li>
+<li>Fit encoding and feature selection on training data only.</li>
+<li>Use reproducible pipelines where practical.</li>
+<li>Never backward-fill missing time-series values.</li>
+<li>Use forward fill only within a documented maximum gap and only when the prior value was operationally available.</li>
+</ul>
+</section>
+<section id="metrics" class="level3">
+<h3 class="anchored" data-anchor-id="metrics">13.4 Metrics</h3>
+<p>Primary metrics:</p>
+<ul>
+<li>Mean Absolute Error; and</li>
+<li>Root Mean Squared Error.</li>
+</ul>
+<p>MAPE is not primary because electricity prices may be zero or negative.</p>
+</section>
+<section id="secondary-analyses" class="level3">
+<h3 class="anchored" data-anchor-id="secondary-analyses">13.5 Secondary analyses</h3>
+<p>Evaluate errors by:</p>
+<ul>
+<li>market;</li>
+<li>hour;</li>
+<li>weekday versus weekend;</li>
+<li>month or season;</li>
+<li>normal versus high-price periods;</li>
+<li>negative-price periods;</li>
+<li>before and after material structural changes; and</li>
+<li>operational versus explanatory feature sets if both are implemented.</li>
+</ul>
+</section>
+</section>
+<section id="completed-work" class="level2">
+<h2 class="anchored" data-anchor-id="completed-work">14. Completed work</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Selected PJM and NYISO.</label></li>
+<li><label><input type="checkbox" checked="">Selected PSEG and Hudson Valley Zone G.</label></li>
+<li><label><input type="checkbox" checked="">Defined the research question and unit of analysis.</label></li>
+<li><label><input type="checkbox" checked="">Selected January 2025 as the feasibility period.</label></li>
+<li><label><input type="checkbox" checked="">Identified 2020–2024 as the planned primary period.</label></li>
+<li><label><input type="checkbox" checked="">Downloaded the January electricity, load, and weather files.</label></li>
+<li><label><input type="checkbox" checked="">Created notebooks 01–04.</label></li>
+<li><label><input type="checkbox" checked="">Validated 744 unique January target hours per market.</label></li>
+<li><label><input type="checkbox" checked="">Cleaned and merged January price and actual load.</label></li>
+<li><label><input type="checkbox" checked="">Implemented reusable data-processing functions.</label></li>
+<li><label><input type="checkbox" checked="">Added market local/UTC timestamp handling.</label></li>
+<li><label><input type="checkbox" checked="">Added NOAA cleaning and validation logic.</label></li>
+<li><label><input type="checkbox" checked="">Preserved missing, rejected, and flagged weather observations.</label></li>
+<li><label><input type="checkbox" checked="">Exported the two January processed electricity datasets.</label></li>
+<li><label><input type="checkbox" checked="">Received and reviewed the NOAA response and LCDv2 documentation.</label></li>
+<li><label><input type="checkbox" checked="">Received and reviewed the NYISO response and Energy Marketplace training.</label></li>
+<li><label><input type="checkbox" checked="">Received and reviewed PJM Case <code>00334055</code>.</label></li>
+<li><label><input type="checkbox" checked="">Confirmed the PSEG/PS and HUD VL/PTID <code>61758</code> identifiers.</label></li>
+<li><label><input type="checkbox" checked="">Defined the 5:00 a.m. NYISO cutoff.</label></li>
+<li><label><input type="checkbox" checked="">Defined the 11:00 a.m. PJM cutoff.</label></li>
+<li><label><input type="checkbox" checked="">Identified PJM <code>load_frcstd_hist</code> and MIDATL as the public historical forecast route.</label></li>
+<li><label><input type="checkbox" checked="">Built the January NYISO forecast-vintage table.</label></li>
+<li><label><input type="checkbox" checked="">Selected and merged one eligible NYISO forecast per target hour.</label></li>
+<li><label><input type="checkbox" checked="">Preserved forecast timing and provenance audit fields.</label></li>
+<li><label><input type="checkbox" checked="">Verified 3 tests and Ruff checks for <code>src</code> and <code>tests</code>.</label></li>
+<li><label><input type="checkbox">Verify whether all planned EDA requirements in Notebook 03 are complete and reproducible.</label></li>
+<li><label><input type="checkbox">Complete the feature-role classification in Notebook 04.</label></li>
+<li><label><input type="checkbox">Validate NYISO availability timestamps.</label></li>
+<li><label><input type="checkbox">Implement PJM historical load-forecast selection.</label></li>
+<li><label><input type="checkbox">Acquire and validate the full 2020–2024 datasets.</label></li>
+<li><label><input type="checkbox">Build final analysis-ready datasets.</label></li>
+<li><label><input type="checkbox">Train and compare models.</label></li>
+<li><label><input type="checkbox">Complete the paper and presentation.</label></li>
+</ul>
+</section>
+<section id="current-milestone-feature-role-classification" class="level2">
+<h2 class="anchored" data-anchor-id="current-milestone-feature-role-classification">15. Current milestone — feature-role classification</h2>
+<p>Current notebook:</p>
+<pre class="text"><code>notebooks/04_feature_engineering.ipynb</code></pre>
+<p>The NYISO forecast-vintage construction, cutoff filtering, selection, and merge are complete through Step 6.</p>
+<section id="immediate-work" class="level3">
+<h3 class="anchored" data-anchor-id="immediate-work">15.1 Immediate work</h3>
+<ol type="1">
+<li><p>Add a Markdown cell classifying columns as target, conditional predictor, audit-only, or excluded.</p></li>
+<li><p>Define:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>target_column <span class="op">=</span> <span class="st">"day_ahead_price_usd_mwh"</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>candidate_feature_columns <span class="op">=</span> [<span class="st">"load_forecast_mw"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p>Define the full <code>forecast_audit_columns</code> list.</p></li>
+<li><p>Print and validate each role group.</p></li>
+<li><p>State that NYISO availability uses a proxy and is not yet approved for final operational modeling.</p></li>
+<li><p>Run the notebook using <code>Python 3.12 (electricity-forecasting)</code>.</p></li>
+<li><p>Preserve all unrelated existing work.</p></li>
+</ol>
+</section>
+<section id="milestone-constraints" class="level3">
+<h3 class="anchored" data-anchor-id="milestone-constraints">15.2 Milestone constraints</h3>
+<ul>
+<li>Do not create a final modeling CSV yet.</li>
+<li>Do not add same-hour actual load as an operational predictor.</li>
+<li>Do not add same-hour observed weather as an operational predictor.</li>
+<li>Do not put audit fields into the default predictor list.</li>
+<li>Do not begin final model training.</li>
+<li>Do not remove forecast vintages or provenance fields needed for audit.</li>
+</ul>
+</section>
+<section id="milestone-completion-criteria" class="level3">
+<h3 class="anchored" data-anchor-id="milestone-completion-criteria">15.3 Milestone completion criteria</h3>
+<ul>
+<li>Every available column has a documented role.</li>
+<li>The target is not present in the candidate predictor list.</li>
+<li>Audit-only fields are preserved but excluded from modeling.</li>
+<li>Excluded fields are explicit.</li>
+<li>The NYISO availability limitation is stated in Markdown.</li>
+<li>Cells run without error from the active kernel.</li>
+</ul>
+</section>
+</section>
+<section id="resolved-findings-and-remaining-uncertainties" class="level2">
+<h2 class="anchored" data-anchor-id="resolved-findings-and-remaining-uncertainties">16. Resolved findings and remaining uncertainties</h2>
+<section id="resolved" class="level3">
+<h3 class="anchored" data-anchor-id="resolved">16.1 Resolved</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Topic</th>
+<th>Resolution</th>
+<th>Evidence type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>PJM price/load pairing</td>
+<td>PSEG node <code>51301</code> with <code>PS</code></td>
+<td>Direct PJM response</td>
+</tr>
+<tr class="even">
+<td>PJM historical forecast source</td>
+<td><code>load_frcstd_hist</code></td>
+<td>Direct PJM response and feed definition</td>
+</tr>
+<tr class="odd">
+<td>PJM forecast area</td>
+<td>MIDATL; no PSEG-only historical detail</td>
+<td>Direct PJM response</td>
+</tr>
+<tr class="even">
+<td>PJM evaluated time</td>
+<td>Forecast generated and made available</td>
+<td>Direct PJM response</td>
+</tr>
+<tr class="odd">
+<td>PJM snapshot retention</td>
+<td>Every six hours; not every live revision</td>
+<td>Direct PJM response</td>
+</tr>
+<tr class="even">
+<td>PJM forecast cutoff</td>
+<td>Conditions as of 11:00 a.m. EPT; project uses strict pre-cutoff rule</td>
+<td>PJM response and market documentation</td>
+</tr>
+<tr class="odd">
+<td>NYISO identifier</td>
+<td><code>HUD VL</code>, PTID <code>61758</code> for price and actual load</td>
+<td>Direct NYISO response</td>
+</tr>
+<tr class="even">
+<td>NYISO cutoff</td>
+<td>5:00 a.m. EPT day before dispatch</td>
+<td>NYISO training timeline</td>
+</tr>
+<tr class="odd">
+<td>NOAA station identifiers</td>
+<td>Newark <code>USW00014734</code>; Stewart <code>USW00014714</code></td>
+<td>Direct NOAA response</td>
+</tr>
+<tr class="even">
+<td>NOAA units</td>
+<td>SI units</td>
+<td>LCDv2 documentation</td>
+</tr>
+<tr class="odd">
+<td>NOAA raw timestamp</td>
+<td>Fixed Local Standard Time</td>
+<td>LCDv2 documentation</td>
+</tr>
+<tr class="even">
+<td>Blank precipitation</td>
+<td>Missing/unreported, not zero</td>
+<td>Direct NOAA response and documentation</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="remaining-uncertainties-and-future-actions" class="level3">
+<h3 class="anchored" data-anchor-id="remaining-uncertainties-and-future-actions">16.2 Remaining uncertainties and future actions</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Uncertainty</th>
+<th>Why it matters</th>
+<th>Required future action</th>
+<th>Decision trigger</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>NYISO archive timestamp is a proxy</td>
+<td>Could misclassify post-cutoff information as eligible</td>
+<td>Validate against an authoritative publication timestamp or exclude the feature</td>
+<td>Before final NYISO modeling table</td>
+</tr>
+<tr class="even">
+<td>NYISO load forecast may be posted after market close</td>
+<td>The correct target hours can still come from an operationally unavailable forecast</td>
+<td>Verify that each selected vintage was actually public before 5:00 a.m.; otherwise use an earlier vintage or omit the feature</td>
+<td>Before final NYISO predictor approval</td>
+</tr>
+<tr class="odd">
+<td>Structured archived weather forecast not selected</td>
+<td>Same-hour observations would leak future information</td>
+<td>Test SRRS/NOAAPort/IEM feasibility or restrict weather to safe lags</td>
+<td>Before approving weather predictors</td>
+</tr>
+<tr class="even">
+<td>NYISO DST implementation not coded from TB-064</td>
+<td>Could create missing or duplicated local hours</td>
+<td>Retrieve bulletin, implement, and test both transitions</td>
+<td>Before multiyear NYISO processing</td>
+</tr>
+<tr class="odd">
+<td>Final PJM price feed not selected</td>
+<td>Different feed versions could change the target</td>
+<td>Compare <code>da_hrl_lmps</code> with <code>rt_da_monthly_lmps</code></td>
+<td>Before PJM bulk download</td>
+</tr>
+<tr class="even">
+<td>Full-period identifiers not audited</td>
+<td>Identifier changes could invalidate joins</td>
+<td>Check effective dates and annual coverage</td>
+<td>Before each annual merge</td>
+</tr>
+<tr class="odd">
+<td>NOAA station histories not audited</td>
+<td>Equipment or location changes could create breaks</td>
+<td>Review HOMR for both stations</td>
+<td>Before full weather modeling</td>
+</tr>
+<tr class="even">
+<td>PJM fast-start pricing changed in 2021</td>
+<td>Possible price-series structural break</td>
+<td>Add indicator, sensitivity test, or limitation discussion</td>
+<td>During EDA/model diagnostics</td>
+</tr>
+<tr class="odd">
+<td>Notebook 03 completion not independently verified in current status</td>
+<td>Project-plan milestone may be overstated</td>
+<td>Restart and run Notebook 03; check deliverables</td>
+<td>Before declaring EDA complete</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="risk-and-future-change-register" class="level2">
+<h2 class="anchored" data-anchor-id="risk-and-future-change-register">17. Risk and future-change register</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Risk</th>
+<th>Effect</th>
+<th>Current mitigation</th>
+<th>Future action or change trigger</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>NYISO forecast availability is misdated</td>
+<td>Leakage and inflated performance</td>
+<td>Proxy flag and strict cutoff</td>
+<td>Replace proxy when authoritative timestamps are found; rebuild features and models</td>
+</tr>
+<tr class="even">
+<td>MIDATL is broader than PSEG</td>
+<td>Market-feature mismatch</td>
+<td>Label as a regional proxy and model markets separately</td>
+<td>Test RTO forecast or no-load-forecast sensitivity model</td>
+</tr>
+<tr class="odd">
+<td>Same-hour actual load leaks target information</td>
+<td>Unrealistic accuracy</td>
+<td>Exclude operationally</td>
+<td>Reconsider only if a safe lag is explicitly defined</td>
+</tr>
+<tr class="even">
+<td>Observed target-hour weather leaks future information</td>
+<td>Unrealistic accuracy</td>
+<td>EDA/upper-bound only</td>
+<td>Replace with archived forecast or safe lag</td>
+</tr>
+<tr class="odd">
+<td>NOAA parsed values are physically invalid</td>
+<td>Distorted coefficients and tree splits</td>
+<td>QC preservation and physical rejection</td>
+<td>Expand validation if new anomalies appear</td>
+</tr>
+<tr class="even">
+<td>NOAA fixed-standard-time timestamps are localized incorrectly</td>
+<td>One-hour summer misalignment</td>
+<td>Localize raw <code>DATE</code> as UTC−05:00</td>
+<td>Add transition-date regression tests</td>
+</tr>
+<tr class="odd">
+<td>DST creates 23/25-hour local days</td>
+<td>Duplicate or missing joins</td>
+<td>Use UTC canonical key</td>
+<td>Implement market-specific transition tests</td>
+</tr>
+<tr class="even">
+<td>Source definitions change during 2020–2024</td>
+<td>Invalid cross-year joins</td>
+<td>Annual source audit</td>
+<td>Version transformation rules by effective date</td>
+</tr>
+<tr class="odd">
+<td>Price methodology changes</td>
+<td>Structural break</td>
+<td>Retain all observations and document changes</td>
+<td>Add regime indicator or sensitivity analysis</td>
+</tr>
+<tr class="even">
+<td>Forecast snapshots are incomplete</td>
+<td>Missing features or biased sample</td>
+<td>Preserve all vintages and missingness</td>
+<td>Compare included versus excluded hours</td>
+</tr>
+<tr class="odd">
+<td>Model tuning becomes excessive</td>
+<td>Delayed writing and completion</td>
+<td>Bounded searches and fixed validation design</td>
+<td>Stop tuning when predeclared budget is reached</td>
+</tr>
+<tr class="even">
+<td>Scope expands beyond the course</td>
+<td>Threatens completion</td>
+<td>Two markets, two locations, four model families</td>
+<td>Defer dashboard/cloud/streaming enhancements</td>
+</tr>
+<tr class="odd">
+<td>Private correspondence is committed publicly</td>
+<td>Privacy or confidentiality problem</td>
+<td>Keep private sources outside Git</td>
+<td>Audit staged files before every commit</td>
+</tr>
+<tr class="even">
+<td>Documentation falls out of sync</td>
+<td>Reproducibility failure</td>
+<td>Update related Markdown files together</td>
+<td>Treat schema/source/method changes as documentation-change triggers</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="thirteen-week-schedule" class="level2">
+<h2 class="anchored" data-anchor-id="thirteen-week-schedule">18. Thirteen-week schedule</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Week</th>
+<th>Primary objective</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Finalize question and scope</td>
+<td>Documented question, locations, target, exclusions</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Validate availability</td>
+<td>Data inventory and source documentation</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>Build January pipeline</td>
+<td>Reproducible cleaning and validation</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>Complete preliminary EDA</td>
+<td>Executed EDA notebook, figures, tables, findings</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>Review literature and prepare proposal</td>
+<td>Proposal and preliminary bibliography</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>Acquire full historical data</td>
+<td>Documented 2020–2024 raw sources</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>Clean, align, and engineer features</td>
+<td>Validated analysis-ready datasets</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>Draft major paper sections</td>
+<td>Midterm draft</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td>Build baselines and regularized models</td>
+<td>Baseline and linear-model results</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td>Build tree-based models</td>
+<td>Random Forest and gradient-boosting results</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td>Tune, evaluate, and compare</td>
+<td>Final metrics and diagnostic figures</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td>Write results and conclusions</td>
+<td>Complete final-paper draft</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td>Revise and present</td>
+<td>Final paper, repository, and presentation</td>
+</tr>
+</tbody>
+</table>
+<p>Course deliverables remain aligned with the DATA 698 syllabus, including the research proposal, midterm draft, final paper, and final presentation. Exact dates and formatting must be checked against the instructor’s current guidance.</p>
+</section>
+<section id="literature-review-plan" class="level2">
+<h2 class="anchored" data-anchor-id="literature-review-plan">19. Literature-review plan</h2>
+<p>The literature review will address:</p>
+<ul>
+<li>day-ahead electricity-price forecasting;</li>
+<li>PJM and NYISO market characteristics;</li>
+<li>statistical and machine-learning electricity-price models;</li>
+<li>regularized regression;</li>
+<li>Random Forest and gradient boosting;</li>
+<li>negative prices and price spikes;</li>
+<li>load and weather predictors;</li>
+<li>forecast-vintage data and data leakage;</li>
+<li>chronological validation;</li>
+<li>structural breaks in electricity markets; and</li>
+<li>cross-market model comparisons.</li>
+</ul>
+<p>Primary scholarly sources should be peer-reviewed articles and appropriate conference papers. PJM, NYISO, NOAA, and software documentation support the data and methodology sections rather than replacing the scholarly literature review.</p>
+</section>
+<section id="reproducibility-and-repository-standards" class="level2">
+<h2 class="anchored" data-anchor-id="reproducibility-and-repository-standards">20. Reproducibility and repository standards</h2>
+<ul>
+<li>Run commands from the repository root.</li>
+<li>Use repository-relative paths.</li>
+<li>Use the active Python 3.12 project environment and registered kernel.</li>
+<li>Keep raw data immutable.</li>
+<li>Store temporary or multi-vintage tables under <code>data/interim/</code>.</li>
+<li>Store analysis-ready tables under <code>data/processed/</code>.</li>
+<li>Store models, predictions, and metrics under <code>outputs/</code>.</li>
+<li>Restart and run completed notebooks from top to bottom.</li>
+<li>Preserve source filenames, identifiers, versions, and provenance.</li>
+<li>Use UTC as the canonical key.</li>
+<li>Keep market-local time for interpretation.</li>
+<li>Keep raw NOAA fixed-standard-time semantics distinct from market-local time.</li>
+<li>Add automated tests for uniqueness, chronology, cutoff eligibility, rolling-window safety, and DST transitions.</li>
+<li>Review <code>git status</code> before staging.</li>
+<li>Stage only files belonging to the current change.</li>
+<li>Do not commit credentials, tokens, private correspondence, personal contact information, or restricted material.</li>
+<li>Update source, methodology, dictionary, pipeline, plan, and status documentation when a material decision changes.</li>
+</ul>
+</section>
+<section id="immediate-next-task" class="level2">
+<h2 class="anchored" data-anchor-id="immediate-next-task">21. Immediate next task</h2>
+<p>Continue <code>notebooks/04_feature_engineering.ipynb</code> after Step 6.</p>
+<p>The next change must:</p>
+<ol type="1">
+<li>document the column-role classification;</li>
+<li>define the price target;</li>
+<li>retain <code>load_forecast_mw</code> as a conditional January candidate;</li>
+<li>define all forecast audit columns;</li>
+<li>explicitly exclude same-hour actual load and observed weather;</li>
+<li>print and validate the role groups; and</li>
+<li>preserve the NYISO availability-proxy limitation.</li>
+</ol>
+<p>Do not create the final modeling dataset or begin final training as part of this task.</p>
+</section>
+<section id="near-term-backlog" class="level2">
+<h2 class="anchored" data-anchor-id="near-term-backlog">22. Near-term backlog</h2>
+<p>After the immediate task:</p>
+<ol type="1">
+<li>derive leakage-safe calendar features;</li>
+<li>implement and test forecast-origin-aware price lags;</li>
+<li>add automated feature-leakage tests;</li>
+<li>implement PJM MIDATL historical forecast selection;</li>
+<li>validate NYISO availability timestamps;</li>
+<li>retrieve and implement TB-064 DST rules;</li>
+<li>verify Notebook 03 completion;</li>
+<li>decide the final PJM price feed;</li>
+<li>audit identifiers and NOAA station histories;</li>
+<li>acquire the full 2020–2024 data only after the above source rules are documented; and</li>
+<li>freeze the approved predictor set before final modeling.</li>
+</ol>
+</section>
+<section id="definition-of-project-completion" class="level2">
+<h2 class="anchored" data-anchor-id="definition-of-project-completion">23. Definition of project completion</h2>
+<p>The project is complete when:</p>
+<ul>
+<li>the research question is precise and defensible;</li>
+<li>targets, locations, identifiers, and units are documented;</li>
+<li>market-specific forecast origins are explicit;</li>
+<li>every operational predictor is proven available before its cutoff;</li>
+<li>proxy availability timestamps are resolved or disclosed and excluded where necessary;</li>
+<li>the full historical data are reproducibly cleaned and validated;</li>
+<li>DST transitions are handled correctly;</li>
+<li>leakage-safe features are generated reproducibly;</li>
+<li>baselines, regularized regression, Random Forest, and boosted trees are trained;</li>
+<li>tuning and evaluation are chronological;</li>
+<li>the final test period remains untouched until final evaluation;</li>
+<li>MAE and RMSE are reported consistently;</li>
+<li>negative and high-price performance is documented;</li>
+<li>market-specific differences and limitations are explained;</li>
+<li>notebooks run successfully from restarted kernels;</li>
+<li>source, methodology, dictionary, and pipeline documentation match the implementation;</li>
+<li>the final paper satisfies the syllabus; and</li>
+<li>the presentation clearly explains methods, findings, limitations, and significance.</li>
+</ul>
+</section>
+<section id="project-status-summary" class="level2">
+<h2 class="anchored" data-anchor-id="project-status-summary">24. Project status summary</h2>
+<p><strong>Current phase:</strong> January 2025 leakage-safe feature engineering.</p>
+<p><strong>Completed milestone:</strong> NYISO forecast-vintage construction, strict pre-5:00 a.m. filtering, latest-eligible selection, and one-to-one merge for all 744 January target hours.</p>
+<p><strong>Current working notebook:</strong> <code>notebooks/04_feature_engineering.ipynb</code>.</p>
+<p><strong>Primary technical dependency:</strong> Validation of an authoritative NYISO forecast-availability timestamp for final 2020–2024 use.</p>
+<p><strong>Other required validations:</strong> PJM MIDATL implementation, final PJM price-feed selection, NYISO TB-064 DST handling, NOAA station-history review, and full-period identifier continuity.</p>
+<p><strong>Next deliverable:</strong> A completed and tested column-role classification followed by leakage-safe calendar and historical features.</p>
+</section>
+<section id="optional-interactive-dashboard" class="level2">
+<h2 class="anchored" data-anchor-id="optional-interactive-dashboard">25. Optional interactive dashboard</h2>
+<p>If the forecasting analysis, final paper, and presentation remain on schedule, an optional Streamlit dashboard may provide:</p>
+<ul>
+<li>PJM PSEG and NYISO Hudson Valley selection;</li>
+<li>historical price exploration;</li>
+<li>actual-versus-predicted plots;</li>
+<li>MAE and RMSE comparisons;</li>
+<li>error analysis by time and price regime;</li>
+<li>negative and high-price analysis;</li>
+<li>feature-importance displays; and</li>
+<li>downloadable prediction and metric tables.</li>
+</ul>
+<p>The dashboard will read saved outputs and will not retrain models when opened. It remains secondary to the validated analysis, paper, and presentation.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

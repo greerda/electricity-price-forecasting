@@ -13,7 +13,7 @@ def is_available_by_cutoff(
     """Return whether each source was available by its target cutoff."""
     return (
         source_available_at.notna()
-        & source_available_at.le(prediction_cutoff).fillna(False)
+        & source_available_at.lt(prediction_cutoff).fillna(False)
     )
 
 def add_rolling_mean_from_safe_feature(
