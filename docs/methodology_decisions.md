@@ -99,22 +99,33 @@ MIDATL must always be described as a regional proxy, not as PSEG-specific foreca
 
 ## M-06 — NYISO historical load forecasts
 
-**Status:** Conditional
+**Status:** Adopted with an explicit evidence caveat
 
-NYISO directed the project to the ISO Load Forecast archive / NY Load Forecast Custom Reports. The January pilot preserves all available vintages, applies a 5:00 a.m. D−1 cutoff, and selects the latest eligible vintage for each target hour.
+NYISO P-7 is the public **ISO Load Forecast** report. Historical `isolf` artifacts contain rolling multi-day zonal forecasts, including `HUD VL`, and the public P-7 report interface associates each dated forecast artifact with a timezone-specific **Last Updated** timestamp.
 
-The implemented January workflow uses the ZIP-entry last-modified timestamp as a proxy for original public availability:
+The project will treat the P-7 **Last Updated** timestamp as the best available evidence of when that specific forecast version became publicly available. This is a documented inference from NYISO's public interface and posting pattern, not a direct NYISO statement defining the field as a formal publication timestamp.
+
+For NYISO forecast-vintage reconstruction:
 
 ```text
-availability_basis = zip_entry_last_modified
+availability_basis = p7_last_updated
 availability_is_proxy = True
 ```
 
-This proxy is sufficient for pipeline development but is not yet authoritative evidence for final strict operational use.
+`availability_is_proxy=True` now means **public-source inferred rather than operator-confirmed**, not that the value comes only from ZIP metadata.
 
-The remaining source-validation question is narrow: whether NYISO preserves a field, report timestamp, archive convention, or other authoritative indicator that proves when a specific historical short-term ISO Load Forecast vintage became publicly available.
+The prior ZIP-entry last-modified timestamp should be retained as secondary provenance/audit information when available but should not be the primary availability timestamp when a P-7 Last Updated value has been captured.
 
-If NYISO identifies an authoritative timestamp, validate and replace the proxy where appropriate. If NYISO confirms that no authoritative historical publication/availability timestamp is retained, exclude `load_forecast_mw` from the strict operational model and retain it only in a clearly labeled conditional or sensitivity analysis.
+The operational selector must:
+
+1. preserve each P-7 forecast vintage and all target hours contained in its multi-day horizon;
+2. construct the 5:00 a.m. EPT D−1 cutoff for each target day;
+3. exclude any P-7 vintage whose Last Updated timestamp is at or after the cutoff; and
+4. select the latest earlier P-7 vintage that still contains the target hour.
+
+Current P-7 examples show updates commonly around 7–8 a.m. on D−1. Therefore, the forecast artifact whose first forecast date is the target day will often be too late for the strict 5:00 a.m. cutoff, while an older P-7 vintage may still contain that target day in its multi-day horizon.
+
+**Future validation:** if NYISO later states that `Last Updated` has a different technical meaning, revise the availability rule, rebuild affected features, and rerun leakage checks. A concise clarification question remains useful but is no longer a blocker: “On the public P-7 ISO Load Forecast page, does the ‘Last Updated’ timestamp represent the time that specific forecast file was actually posted and publicly available to market participants?”
 
 ## M-07 — Actual load
 
@@ -208,6 +219,7 @@ Before final modeling, audit:
 - MIDATL historical forecast coverage and schema;
 - the September 1, 2021 PJM fast-start-pricing change as a possible structural break;
 - NYISO `HUD VL` / PTID `61758` continuity;
+- NYISO P-7 Last Updated availability coverage and semantics across 2020–2024;
 - NYISO annual schemas and DST behavior;
 - NOAA station histories; and
 - annual field names, units, revisions, and missingness.
