@@ -41,9 +41,10 @@ This dictionary documents processed fields, source mappings, units, time convent
 | Location identifier | `PTID` | Expected `61758` |
 | Day-ahead price | `LBMP ($/MWHr)` | Complete zonal target |
 | Actual integrated load | `Integrated Load` | Same-hour value excluded operationally |
-| Forecast target hour | `Time Stamp` or archive target field | Future operating hour represented by forecast |
-| Forecast value | Hudson Valley zonal forecast field | Candidate predictor subject to availability proof |
-| Forecast availability | currently ZIP entry last-modified | Proxy only unless validated against authoritative NYISO timing |
+| P-7 forecast target hour | `Hour` plus forecast-day section/date | Future operating hour represented by forecast |
+| P-7 forecast value | `HUD VL` | Hudson Valley zonal forecast MW |
+| P-7 forecast availability | P-7 public-report `Last Updated` | Primary inferred public-availability evidence; preserve timezone label |
+| ZIP entry timestamp | archive entry last-modified | Secondary provenance/audit field only when P-7 `Last Updated` is available |
 
 ## NOAA source mapping
 
@@ -66,7 +67,7 @@ This dictionary documents processed fields, source mappings, units, time convent
 |---|---|---|---|
 | `load_forecast_mw` | numeric, MW | Latest eligible load forecast for target hour | Candidate predictor |
 | `forecast_target_at_utc` | timezone-aware datetime | Future operating hour represented by forecast | Join/audit key |
-| `forecast_available_at_utc` | timezone-aware datetime | Availability/evaluation time used for cutoff | Audit; may be proxy for NYISO |
+| `forecast_available_at_utc` | timezone-aware datetime | Availability/evaluation time used for cutoff | PJM authoritative; NYISO inferred from P-7 `Last Updated` |
 | `forecast_available_at` | timezone-aware datetime | Local representation of forecast availability | Audit |
 | `prediction_cutoff_utc` | timezone-aware datetime | Market cutoff in UTC | Audit and eligibility validation |
 | `prediction_cutoff` | timezone-aware datetime | NYISO 05:00 or PJM 11:00 on D−1 | Audit |
@@ -75,8 +76,23 @@ This dictionary documents processed fields, source mappings, units, time convent
 | `forecast_area` | string | `MIDATL`, `HUD VL`, or other documented area | Provenance |
 | `source_archive` | string | Archive containing forecast | Provenance |
 | `source_file` | string | Forecast file/entry | Provenance |
-| `availability_basis` | string | Evidence used to establish availability time | For NYISO pilot currently `zip_entry_last_modified` |
-| `availability_is_proxy` | Boolean | Whether availability is inferred rather than authoritative | For NYISO currently `True`; replace/validate or exclude feature before strict operational use |
+| `p7_last_updated` | timezone-aware datetime | NYISO P-7 public-report `Last Updated` timestamp associated with the dated forecast artifact | Primary NYISO availability evidence |
+| `zip_entry_last_modified` | timezone-aware datetime | ZIP-entry timestamp for archived `isolf` file where available | Secondary provenance/audit |
+| `availability_basis` | string | Evidence used to establish `forecast_available_at` | NYISO target value: `p7_last_updated`; PJM uses `evaluated_at` semantics |
+| `availability_is_proxy` | Boolean | Whether availability semantics are inferred rather than operator-confirmed | NYISO remains `True` until NYISO explicitly defines `Last Updated` as public availability; PJM can be `False` |
+
+For NYISO, `availability_is_proxy=True` does **not** mean the timestamp is merely a ZIP metadata guess. It means the timestamp comes from NYISO's public P-7 interface but its formal semantics have not been directly confirmed by NYISO. If NYISO later confirms that `Last Updated` is the public posting/availability time, this flag can be changed to `False` after documentation and regression testing.
+
+## NYISO P-7 vintage-selection rule
+
+For each NYISO target hour:
+
+1. retain all P-7 vintages whose rolling multi-day horizon contains that target hour;
+2. set `forecast_available_at` from `p7_last_updated` when available;
+3. require `forecast_available_at < prediction_cutoff` where the cutoff is 5:00 a.m. EPT on D−1; and
+4. choose the latest eligible P-7 vintage.
+
+Because P-7 updates often occur around 7–8 a.m. on D−1, the forecast artifact whose first forecast day equals the target day may be too late for the strict cutoff. An earlier P-7 vintage may still be eligible because each artifact contains multiple future forecast days.
 
 ## Derived calendar fields
 
@@ -128,7 +144,7 @@ Every modeling-ready column must belong to exactly one role:
 | Market | Checkpoint | Candidate predictor note |
 |---|---|---|
 | PJM PSEG | `data/processed/pjm_pseg_january_2025_modeling_ready.csv` | Calendar plus cutoff-safe price-history features; historical MIDATL forecast not yet implemented |
-| NYISO Hudson Valley | `data/processed/nyiso_hudson_valley_january_2025_modeling_ready.csv` | Common features plus conditional `load_forecast_mw` using proxy availability timing |
+| NYISO Hudson Valley | `data/processed/nyiso_hudson_valley_january_2025_modeling_ready.csv` | Existing feasibility export uses earlier ZIP-based timing and must be regenerated/revalidated after P-7 `Last Updated` integration |
 
 Both checkpoint tables contain 744 unique ordered January target hours. They are feasibility artifacts, not the final 2020–2024 evidence base.
 
@@ -143,6 +159,7 @@ Both checkpoint tables contain 744 unique ordered January target hours. They are
 ## Future dictionary actions
 
 - Add exact PJM `load_frcstd_hist` processed columns after first full-period acquisition.
-- Replace or validate NYISO proxy availability fields if NYISO identifies an authoritative historical publication timestamp.
+- Add P-7 `Last Updated` ingestion fields to the NYISO forecast-vintage dataset and retain ZIP timestamps as secondary provenance.
+- Change `availability_is_proxy` for NYISO only if NYISO explicitly confirms the formal semantics of `Last Updated`.
 - Add finalized DST audit fields after testing actual 2020–2024 transition-day files.
 - Version this dictionary whenever processed schemas or feature-role definitions change.
