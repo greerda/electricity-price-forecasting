@@ -51,7 +51,7 @@ Completed:
 - January modeling-ready checkpoint exports;
 - notebook execution and automated validation.
 
-January remains a pipeline-development sample and is not final capstone evidence.
+January remains a pipeline-development sample and is not final capstone evidence. The NYISO forecast-vintage timing portion must be regenerated using P-7 `Last Updated` metadata rather than ZIP-only timing.
 
 ## 6. PJM source status
 
@@ -77,37 +77,45 @@ PJM no longer has a major unresolved external-source question.
 
 ## 7. NYISO source status
 
-### Resolved
+### Resolved / adopted
 
 - Hudson Valley location: `HUD VL`, PTID `61758`.
 - Historical price/load source: NYISO MIS public archive.
-- Historical load-forecast route: ISO Load Forecast archive / NY Load Forecast Custom Reports.
+- Historical load-forecast product: P-7 ISO Load Forecast / `isolf`.
+- Historical P-7 artifacts contain rolling multi-day zonal forecasts including `HUD VL`.
+- The public P-7 interface exposes a timezone-specific `Last Updated` timestamp associated with each dated forecast artifact.
+- The project treats P-7 `Last Updated` as the best available public-source evidence of forecast availability.
+- This is an explicit inference from NYISO's public interface and posting pattern, not a direct NYISO confirmation of the field's formal publication semantics.
 - Day-Ahead Market cutoff: 5:00 a.m. EPT D−1.
 - NYISO TB-064 documents the 25-hour fall-back transition and `HB25` representation.
 - NYISO TB-088 documents the 23-hour spring-forward transition and missing `HB02`.
 - DST is resolved at the documentation level; only implementation/testing remains.
 
-### Remaining NYISO external-source question
+### P-7 forecast-availability rule
 
-The January forecast workflow currently uses ZIP-entry last-modified time as a proxy for public availability:
+Use:
 
 ```text
-availability_basis = zip_entry_last_modified
+availability_basis = p7_last_updated
 availability_is_proxy = True
 ```
 
-The remaining question is whether NYISO preserves an authoritative historical issuance/publication/public-availability timestamp for each short-term ISO Load Forecast vintage.
+`availability_is_proxy=True` means the availability semantics are inferred from a public NYISO field rather than directly confirmed by NYISO. ZIP-entry last-modified timestamps remain secondary provenance/audit evidence.
 
-If an authoritative timestamp exists, validate and replace the proxy where appropriate. If no authoritative timestamp is retained, exclude `load_forecast_mw` from the strict operational model and retain it only in a clearly labeled conditional/sensitivity analysis.
+For each target hour, use the latest P-7 vintage whose `Last Updated` timestamp is strictly before 5:00 a.m. EPT D−1 and whose multi-day horizon includes that target hour.
 
-This issue does **not** block the full 2020–2024 capstone.
+Current P-7 examples commonly update around 7–8 a.m. on D−1, so the artifact whose first forecast day equals the target day may be too late. An earlier P-7 vintage can remain usable because P-7 contains multiple future forecast days.
+
+A one-sentence clarification to NYISO remains useful but is no longer a project blocker: whether `Last Updated` formally represents when that specific P-7 file became publicly available.
 
 ### Remaining NYISO work
 
-- acquire 2020–2024 LBMP, integrated load, and load-forecast files;
+- capture or reconstruct P-7 `Last Updated` metadata for 2020–2024;
+- update the January ingestion/vintage-selection path and rerun leakage validation;
+- acquire 2020–2024 LBMP, integrated load, and P-7 forecast files;
 - verify `HUD VL` / PTID `61758` continuity;
 - validate annual schemas and archive conventions;
-- compare Custom Reports and `isolf` where helpful; and
+- compare Custom Reports and P-7/`isolf` where helpful; and
 - test every historical spring/fall transition against TB-064/TB-088 behavior.
 
 ## 8. NOAA status
@@ -133,7 +141,7 @@ Remaining NOAA work:
 | Calendar features | Approved | Known before cutoff |
 | Cutoff-safe historical price lags | Approved | Explicit availability test required |
 | PJM MIDATL historical load forecast | Approved candidate | Latest eligible snapshot strictly before 11:00 a.m. |
-| NYISO `load_forecast_mw` | Conditional | Latest eligible vintage strictly before 5:00 a.m.; availability currently proxy-based |
+| NYISO P-7 `load_forecast_mw` | Approved candidate with evidence caveat | Latest P-7 vintage strictly before 5:00 a.m.; `Last Updated` used as inferred public availability |
 | Same-hour actual load | Excluded operationally | EDA or safe lag only |
 | Same-hour observed weather | Excluded operationally | EDA/upper-bound only |
 | Archived weather forecast | Under investigation | Must preserve issue time, valid time, and vintage |
@@ -171,11 +179,11 @@ Before final modeling:
 
 1. validate PSEG pnode `51301`, `PS`, MIDATL, `HUD VL`, and PTID `61758` across every study year;
 2. acquire all final 2020–2024 market datasets with provenance records;
-3. resolve the NYISO authoritative forecast-availability timestamp if possible;
-4. if unresolved, remove NYISO `load_forecast_mw` from the strict operational feature set;
+3. capture P-7 `Last Updated` metadata and validate its coverage across the full study period;
+4. regenerate January NYISO forecast-vintage timing and add tests for strict pre-5:00 selection;
 5. implement PJM MIDATL latest-eligible selection using `evaluated_at` and the strict pre-11:00 rule;
 6. implement/test NYISO TB-064 and TB-088 handling against actual transition-day files;
-7. test PJM DST behavior in Data Miner fields;
+7. test PJM DST behavior in Data Miner timestamp fields;
 8. audit NOAA station histories and fixed-standard-time conversion;
 9. decide the final PJM historical price feed;
 10. audit annual schemas, units, revisions, and missingness;
@@ -186,7 +194,8 @@ Before final modeling:
 
 | Risk | Treatment |
 |---|---|
-| NYISO forecast availability cannot be authoritatively reconstructed | Exclude `load_forecast_mw` from strict model; optionally retain conditional sensitivity model |
+| NYISO later defines P-7 `Last Updated` differently | Revise availability rule, rebuild affected forecast features, rerun leakage checks, and document the change |
+| P-7 `Last Updated` metadata unavailable for part of 2020–2024 | Use documented fallback only if defensible; otherwise omit affected forecast feature/time range rather than infer silently |
 | Historical identifier/schema change | Detect during annual continuity audit; document and adapt reproducibly |
 | DST ambiguity | Use UTC canonical key and test actual transition-day files |
 | Weather forecast archive impractical | Use only leakage-safe historical/weather features or omit operational weather |
@@ -208,4 +217,4 @@ Private correspondence must remain outside the public repository when it include
 
 ## 15. Immediate next action
 
-Begin the 2020–2024 source-continuity and acquisition audit. Validate identifiers, annual schemas, timestamp conventions, and forecast coverage before final multiyear feature generation or model fitting.
+Update the NYISO forecast-ingestion/vintage-selection path to use P-7 `Last Updated` metadata, retain ZIP timestamps as secondary provenance, regenerate the January NYISO forecast-vintage table, and rerun cutoff/leakage validation before bulk 2020–2024 acquisition.
