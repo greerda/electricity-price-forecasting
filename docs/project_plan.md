@@ -1,742 +1,211 @@
 # Electricity Price Forecasting Capstone — Project Plan
 
-**Last updated:** August 31, 2026
-**Current phase:** January 2025 pre-modeling completion gate  
-**Current task:** Task 7 of 7 — pre-modeling checkpoint complete
+**Last updated:** September 1, 2026  
+**Current phase:** Full-period source-continuity and acquisition preparation
 
-## How to Use This Document
+## 1. Project overview
 
-This file is the authoritative academic and technical roadmap for the capstone. It records the project scope, methodological decisions, milestones, risks, schedule, and completion criteria.
+This capstone will develop, evaluate, and compare statistical and machine-learning models for forecasting hourly day-ahead electricity prices in:
 
-- Use `docs/current_status.md` for the short, frequently updated handoff.
-- Use `AGENTS.md` for instructions that govern coding-agent behavior in the repository.
-- Use this file when a milestone, project decision, dependency, or scope item changes.
+- PJM PSEG pricing zone; and
+- NYISO Hudson Valley Zone G.
 
-### Document Organization
+January 2025 is the feasibility and pipeline-development sample. The planned primary study period is January 1, 2020 through December 31, 2024.
 
-| Part | Sections | Purpose |
+## 2. Research question
+
+> How accurately can statistical and machine-learning models forecast hourly day-ahead electricity prices, and how does predictive performance differ between PJM PSEG and NYISO Hudson Valley Zone G?
+
+## 3. Markets, targets, and identifiers
+
+| Market | Location | Identifier | Target | Unit |
+|---|---|---|---|---|
+| PJM | PSEG zone | pnode `51301`; paired load area `PS` | `total_lmp_da` | `$/MWh` |
+| NYISO | Hudson Valley Zone G | `HUD VL`, PTID `61758` | published day-ahead LBMP | `$/MWh` |
+
+The unit of analysis is one market-location-hour. PJM and NYISO are modeled separately and compared with consistent out-of-sample metrics.
+
+## 4. Canonical time and forecast origins
+
+`timestamp_utc` is the canonical join, ordering, validation, split, and modeling key. Timezone-aware market-local timestamps are retained for interpretation and calendar features.
+
+| Market | Operational cutoff | Project eligibility rule |
 |---|---|---|
-| Project definition | 1–5 | Research question, significance, and scope |
-| Data and methods | 6–13 | Sources, feasibility results, predictors, models, features, and evaluation |
-| Execution | 14–18 | Completed work, current milestone, dependencies, risks, and schedule |
-| Delivery and governance | 19–25 | Literature, reproducibility, next tasks, completion criteria, status, and dashboard |
+| PJM | 11:00 a.m. EPT on D−1 | Predictor must be available strictly before 11:00 a.m. |
+| NYISO | 5:00 a.m. EPT on D−1 | Predictor must be available strictly before 5:00 a.m. |
 
-## Authoritative pre-modeling completion gate — Tasks 1–7
+Every operational predictor must have been available at the applicable cutoff. Same-hour actual load and same-hour observed weather are excluded from the strict operational predictor set unless a safe lag or archived forecast is demonstrated.
 
-Complete these tasks in order. Do not begin model fitting until all seven gates pass.
+## 5. January 2025 feasibility checkpoint
 
-1. **Complete — validate calendar features in Notebook 04.** Fresh-kernel validation confirmed the derived fields' ranges, types, nonmissingness, weekend logic, and candidate-list membership.
-2. **Complete — reconcile the notebook and reusable preprocessing paths.** The reusable January path now uses the committed schema and matches Notebook 02's SI-unit, report-priority, complete-hourly-index, and weather-audit policies.
-3. **Complete — implement forecast-origin-aware historical features.** Explicit availability checks, cutoff-safe prior-day lags, and full-window rolling statistics are implemented and validated for NYISO. Availability assumptions remain provisional.
-4. **Complete — comparable PJM feature path.** The provisional D−1 11:00 America/New_York cutoff, cutoff-safe historical-price features, excluded same-hour operational fields, and common-versus-NYISO-augmented feature sets are implemented and validated.
-5. **Complete — expand automated validation.** Tests cover schemas, timestamp order and uniqueness, calendar ranges, weather policy, cutoff eligibility, latest-vintage selection and tie failure, prohibited-column exclusion, row counts, and absence of future information. The full 21-test suite and Ruff pass.
-6. **Complete — validate Notebook 03 EDA.** Notebook 03 provides descriptive January price/load analysis, retains and identifies high/negative prices, labels same-hour actual load and observed weather as non-operational, and runs from a fresh kernel without errors.
-7. **Complete — create the pre-modeling checkpoint.** Notebook 04 exported validated January checkpoint CSV files for PJM and NYISO with explicit field roles. Both tables have 744 unique ordered target hours and nonmissing targets; role-overlap and prohibited-predictor checks, fresh-kernel execution, the 21-test suite, and Ruff passed. The NYISO availability-proxy warning and provisional market cutoffs remain active.
+Completed:
 
-**Exit condition:** after Task 7, the January feasibility pipeline is ready for baseline-model development. January 2025 remains a feasibility sample; it is not the final 2020–2024 evidence base.
+- 744 unique hourly target rows for PJM and NYISO;
+- cleaned and merged price/load tables;
+- NOAA hourly weather reconciliation;
+- NYISO forecast-vintage reconstruction with 4,464 vintage/target-hour rows;
+- latest-eligible NYISO vintage selection and merge;
+- calendar features;
+- cutoff-safe historical price lags and rolling features;
+- explicit predictor/audit/identifier/excluded field roles;
+- January modeling-ready checkpoint exports;
+- notebook execution and automated validation.
 
----
+January remains a pipeline-development sample and is not final capstone evidence.
 
-## 1. Project Overview
+## 6. PJM source status
 
-This graduate data-science capstone will develop, evaluate, and compare models for forecasting hourly day-ahead electricity prices in two wholesale electricity markets:
+### Resolved
 
-- PJM PSEG pricing zone
-- NYISO Hudson Valley Zone G
+- PSEG pnode `51301` selected as the price location.
+- `PS` selected as the paired metered-load area.
+- Historical load forecasts use `load_frcstd_hist`.
+- `MIDATL` is the narrowest preserved historical forecast area covering PSEG and is a regional proxy, not PSEG-specific forecast load.
+- PJM confirmed `evaluated_at_ept` is when a historical forecast was generated and made available.
+- Historical feed preserves six-hour snapshots.
+- Project cutoff is latest eligible forecast strictly before 11:00 a.m. EPT D−1.
 
-The project will compare statistical baselines, regularized regression, and tree-based machine-learning models using predictors that can be verified as available before the applicable day-ahead forecasting cutoff.
+### Remaining PJM work
 
-January 2025 is being used as a feasibility sample for developing and validating the data pipeline. The planned primary study period is January 1, 2020, through December 31, 2024, subject to confirmation of historical data availability, definitions, timestamp conventions, and forecast issuance information.
+- acquire 2020–2024 `load_frcstd_hist` MIDATL data;
+- verify pnode `51301`, `PS`, and MIDATL continuity by year;
+- decide whether the final historical price series uses or is reconciled against `rt_da_monthly_lmps`;
+- test Data Miner timestamp behavior across DST transitions; and
+- evaluate September 1, 2021 fast-start pricing as a possible structural break.
 
----
+PJM no longer has a major unresolved external-source question.
 
-## 2. Working Research Question
+## 7. NYISO source status
 
-**How accurately can statistical and machine-learning models forecast hourly day-ahead electricity prices, and how does predictive performance differ between PJM PSEG and NYISO Hudson Valley Zone G?**
+### Resolved
 
----
+- Hudson Valley location: `HUD VL`, PTID `61758`.
+- Historical price/load source: NYISO MIS public archive.
+- Historical load-forecast route: ISO Load Forecast archive / NY Load Forecast Custom Reports.
+- Day-Ahead Market cutoff: 5:00 a.m. EPT D−1.
+- NYISO TB-064 documents the 25-hour fall-back transition and `HB25` representation.
+- NYISO TB-088 documents the 23-hour spring-forward transition and missing `HB02`.
+- DST is resolved at the documentation level; only implementation/testing remains.
 
-## 3. Supporting Research Questions
+### Remaining NYISO external-source question
 
-1. Which forecasting model produces the lowest out-of-sample error in each market?
-2. Does the best-performing model differ between PJM and NYISO?
-3. How does forecasting accuracy vary by hour of day, day of week, season, and price level?
-4. How well do relatively simple statistical models perform compared with tree-based machine-learning models?
-5. How do models perform during negative-price and unusually high-price periods?
-6. What market or data characteristics may help explain differences in predictive performance between PJM and NYISO?
-
----
-
-## 4. Academic and Practical Significance
-
-Day-ahead electricity prices affect generators, utilities, energy traders, large consumers, and market operators. These prices are difficult to predict because they are influenced by time-dependent demand, weather, generation availability, congestion, fuel costs, and market-specific operating conditions.
-
-Comparing PJM and NYISO provides an opportunity to determine whether the same forecasting methods perform consistently across two organized wholesale electricity markets. The project will also demonstrate practical data-science skills in:
-
-- Data acquisition and validation
-- Time-series data cleaning
-- Timestamp and timezone management
-- Exploratory data analysis
-- Feature engineering
-- Leakage prevention
-- Regression modeling
-- Machine-learning model comparison
-- Chronological validation
-- Reproducible research
-- Technical documentation and presentation
-
----
-
-## 5. Project Scope
-
-### 5.1 Markets and Selected Locations
-
-| Market | Selected location             | Target variable            |
-| ------ | ----------------------------- | -------------------------- |
-| PJM    | PSEG zone, pricing node 51301 | Hourly day-ahead total LMP |
-| NYISO  | Hudson Valley Zone G          | Hourly day-ahead LMP       |
-
-### 5.2 Dependent Variable
-
-The dependent variable is the hourly day-ahead locational marginal price in dollars per megawatt-hour (`$/MWh`).
-
-PJM currently uses the `total_lmp_da` field. Confirmation has been requested that this represents the complete day-ahead LMP, including applicable energy, congestion, and marginal-loss components.
-
-### 5.3 Unit of Analysis
-
-One hourly observation per market.
-
-PJM and NYISO will be modeled separately. Their model performance will then be compared using consistent evaluation metrics and evaluation periods.
-
-### 5.4 Feasibility Period
-
-January 1–31, 2025.
-
-Each market contains 744 hourly observations during this period.
-
-### 5.5 Planned Primary Study Period
-
-January 1, 2020, through December 31, 2024.
-
-The five-year period will not be finalized until the project confirms:
-
-- Historical data availability
-- Consistency of market-location definitions
-- Historical forecast availability
-- Forecast issuance timestamps
-- Prediction cutoffs
-- Daylight-saving-time treatment
-- Whether important dataset definitions changed during the period
-
-### 5.6 Primary Forecast Horizon
-
-The intended task is day-ahead hourly price forecasting.
-
-The exact cutoff must specify what information would have been available when the forecast was produced. This cutoff remains provisional pending clarification from PJM and NYISO.
-
-### 5.7 Out-of-Scope Items
-
-The primary capstone will not include:
-
-- Real-time streaming infrastructure
-- Causal inference
-- Retrieval-augmented generation
-- Hugging Face or large language models
-- Multiple pricing locations within each market
-- Logistic price-spike classification
-- Extensive AWS production architecture
-- LSTM or GRU neural networks unless substantial time remains
-
-These may be discussed as future extensions.
-
----
-
-## 6. Data Sources
-
-| Dataset                             | Source                | Intended purpose                                   | Current status                                     |
-| ----------------------------------- | --------------------- | -------------------------------------------------- | -------------------------------------------------- |
-| PJM Day-Ahead Hourly LMP            | PJM Data Miner 2      | PJM target variable                                | January sample validated                           |
-| PJM PS Hourly Load: Metered         | PJM Data Miner 2      | Feasibility EDA and possible predictor             | Validated but provisional                          |
-| NYISO Hudson Valley Day-Ahead LMP   | NYISO                 | NYISO target variable                              | January sample validated                           |
-| NYISO Hudson Valley integrated load | NYISO                 | Feasibility EDA and possible predictor             | Validated but provisional                          |
-| Newark weather observations         | NOAA                  | PJM-area weather feasibility testing               | January reusable path reconciled; 744 hours        |
-| Stewart weather observations        | NOAA                  | NYISO-area weather feasibility testing             | January reusable path reconciled; 744 hours        |
-| Calendar variables                  | Derived               | Hour, weekday, month, season, and holiday features | Hour/day/weekend validated in Task 1               |
-| Historical day-ahead load forecasts | PJM and NYISO         | Potential final predictor                          | Availability under investigation                   |
-| Historical weather forecasts        | To be determined      | Potential final predictor                          | Availability under investigation                   |
-| Historical price lags               | Derived from LMP data | Final predictor                                    | Planned                                            |
-| Natural-gas prices                  | To be determined      | Optional predictor                                 | Include only if readily available and time permits |
-
-Raw source files must remain unchanged under `data/raw/`.
-
----
-
-## 7. Current Repository Files
-
-### 7.1 Main Notebooks
+The January forecast workflow currently uses ZIP-entry last-modified time as a proxy for public availability:
 
 ```text
-notebooks/
-├── 01_data_inventory.ipynb
-├── 02_data_cleaning.ipynb
-├── 03_exploratory_analysis.ipynb
-├── 04_feature_engineering.ipynb
-├── 05_baseline_models.ipynb
-└── 06_model_comparison.ipynb
+availability_basis = zip_entry_last_modified
+availability_is_proxy = True
 ```
 
-### 7.2 Processed January Files
+The remaining question is whether NYISO preserves an authoritative historical issuance/publication/public-availability timestamp for each short-term ISO Load Forecast vintage.
 
-```text
-data/processed/
-├── pjm_pseg_january_2025_electricity.csv
-└── nyiso_hudson_valley_january_2025_electricity.csv
-```
+If an authoritative timestamp exists, validate and replace the proxy where appropriate. If no authoritative timestamp is retained, exclude `load_forecast_mw` from the strict operational model and retain it only in a clearly labeled conditional/sensitivity analysis.
 
-The two processed CSV files are committed to and tracked by Git.
+This issue does **not** block the full 2020–2024 capstone.
+
+### Remaining NYISO work
+
+- acquire 2020–2024 LBMP, integrated load, and load-forecast files;
+- verify `HUD VL` / PTID `61758` continuity;
+- validate annual schemas and archive conventions;
+- compare Custom Reports and `isolf` where helpful; and
+- test every historical spring/fall transition against TB-064/TB-088 behavior.
 
-These files are suitable for:
+## 8. NOAA status
 
-- Pipeline testing
-- Exploratory data analysis
-- Feature-engineering tests
-- Preliminary modeling-code tests
-- Reproducibility verification
+- Newark station: `USW00014734`.
+- Stewart station: `USW00014714`.
+- LCDv2 is the primary observed-weather source.
+- Bulk station-year CSVs use SI units.
+- Raw `DATE` values use fixed Local Standard Time without DST.
+- Blank precipitation means missing/unreported, not zero.
+- Same-hour observed weather is descriptive only unless operational timing is established.
 
-They are not the final modeling datasets.
+Remaining NOAA work:
 
-### 7.3 Other Project Files
+- acquire 2020–2024 station-year files;
+- audit both station histories in HOMR; and
+- decide whether a reproducible archived weather-forecast feature is feasible.
 
-```text
-AGENTS.md
-PROJECT_PLAN.md
-docs/textbook_notes/
-```
+## 9. Predictor status
 
-`AGENTS.md` contains repository guidance for IDE coding agents. It should not be used as a replacement for the academic project plan.
+| Predictor | Status | Rule |
+|---|---|---|
+| Calendar features | Approved | Known before cutoff |
+| Cutoff-safe historical price lags | Approved | Explicit availability test required |
+| PJM MIDATL historical load forecast | Approved candidate | Latest eligible snapshot strictly before 11:00 a.m. |
+| NYISO `load_forecast_mw` | Conditional | Latest eligible vintage strictly before 5:00 a.m.; availability currently proxy-based |
+| Same-hour actual load | Excluded operationally | EDA or safe lag only |
+| Same-hour observed weather | Excluded operationally | EDA/upper-bound only |
+| Archived weather forecast | Under investigation | Must preserve issue time, valid time, and vintage |
+| Natural-gas price | Optional | Publication timing must be documented |
 
----
+## 10. Planned models
 
-## 8. January 2025 Feasibility Results
+Primary model comparison:
 
-### 8.1 Electricity Data Validation
+1. persistence/historical-average baseline;
+2. regularized linear regression such as Ridge or Elastic Net;
+3. Random Forest regression; and
+4. gradient-boosted tree regression such as XGBoost.
 
-| Validation check           | PJM | NYISO |
-| -------------------------- | --: | ----: |
-| Hourly records             | 744 |   744 |
-| Unique hourly timestamps   | Yes |   Yes |
-| Missing price values       |   0 |     0 |
-| Missing load values        |   0 |     0 |
-| Matched price/load records | 744 |   744 |
+A simple unregularized linear regression may be included as an interpretable reference. Neural networks are not required for the primary capstone.
 
-The price and load datasets were successfully aligned within each market.
+## 11. Validation strategy
 
-### 8.2 Weather Data Validation
+- Chronological splitting only.
+- Rolling-origin or expanding-window validation for tuning.
+- Fit preprocessing on training data only.
+- Preserve an untouched final test period.
+- Primary metrics: MAE and RMSE.
+- MAPE is not a primary metric because prices may be zero or negative.
 
-| Validation check                  | Newark | Stewart |
-| --------------------------------- | -----: | ------: |
-| Output hourly records             |    744 |     744 |
-| Incomplete hours                  |      3 |       7 |
-| Corrupted observations rejected   |      0 |       4 |
-| Future-looking interpolation used |     No |      No |
+Candidate split, subject to final coverage review:
 
-The clearly implausible Stewart observations were rejected. Examples included extreme temperature, dew-point, humidity, and wind values that were physically unrealistic.
+- training: 2020–2022;
+- validation/tuning: 2023;
+- final test: 2024.
 
-NOAA quality flags are retained. A quality-flagged observation is not automatically treated as corrupted.
+## 12. Full-period implementation checklist
 
-Missing weather measurements remain visible. They have not been filled using future observations or substituted with measurements from the other weather station.
+Before final modeling:
 
-### 8.3 Timestamp Status
+1. validate PSEG pnode `51301`, `PS`, MIDATL, `HUD VL`, and PTID `61758` across every study year;
+2. acquire all final 2020–2024 market datasets with provenance records;
+3. resolve the NYISO authoritative forecast-availability timestamp if possible;
+4. if unresolved, remove NYISO `load_forecast_mw` from the strict operational feature set;
+5. implement PJM MIDATL latest-eligible selection using `evaluated_at` and the strict pre-11:00 rule;
+6. implement/test NYISO TB-064 and TB-088 handling against actual transition-day files;
+7. test PJM DST behavior in Data Miner fields;
+8. audit NOAA station histories and fixed-standard-time conversion;
+9. decide the final PJM historical price feed;
+10. audit annual schemas, units, revisions, and missingness;
+11. evaluate the PJM fast-start pricing change as a structural break; and
+12. rerun all cleaning, feature engineering, validation, and leakage checks before final model training.
 
-The January feasibility data include local and UTC timestamp handling.
+## 13. Risk handling
 
-January occurs entirely under Eastern Standard Time, but the final 2020–2024 dataset will cross daylight-saving-time transitions. Timezone-aware conversion and explicit handling of repeated or missing local hours will therefore be required.
+| Risk | Treatment |
+|---|---|
+| NYISO forecast availability cannot be authoritatively reconstructed | Exclude `load_forecast_mw` from strict model; optionally retain conditional sensitivity model |
+| Historical identifier/schema change | Detect during annual continuity audit; document and adapt reproducibly |
+| DST ambiguity | Use UTC canonical key and test actual transition-day files |
+| Weather forecast archive impractical | Use only leakage-safe historical/weather features or omit operational weather |
+| PJM price-method structural change | Analyze pre/post fast-start pricing and report limitation |
+| Missing or revised source data | Preserve provenance, missingness, versions, and source-specific limitations |
 
----
+## 14. Documentation governance
 
-## 9. Methodological Decisions
+Authoritative project documentation:
 
-The following decisions currently govern the project:
+- `docs/current_status.md` — short current-state handoff;
+- `docs/methodology_decisions.md` — methodological decisions and rationale;
+- `docs/data_source_register.md` — source evidence and limitations;
+- `docs/data_dictionary.md` — fields, units, roles, and timestamp rules;
+- `docs/notebook_pipeline_map.md` — high-level data/notebook flow; and
+- `docs/learning_log.md` — learning and reproducibility notes.
 
-- The target is hourly day-ahead LMP in `$/MWh`.
-- PJM and NYISO will be modeled separately.
-- Results will be compared using the same evaluation metrics.
-- Local market timestamps and UTC timestamps will both be retained.
-- Daylight-saving-time transitions will be explicitly validated.
-- Only information available before the prediction cutoff may be used as a final predictor.
-- Same-hour actual load is provisional because it may not have been available when a day-ahead prediction would have been made.
-- Same-hour observed weather is provisional for the same reason.
-- Historical weather forecasts are preferred if they can be obtained with valid issuance timestamps.
-- Lagged observed weather may be considered only when the lag guarantees availability before the prediction cutoff.
-- Historical price lags and calendar variables form the minimum defensible predictor set.
-- Time-series observations will not be randomly shuffled.
-- Training, validation, and testing will follow chronological order.
-- Missing values will not be filled using future observations.
-- Negative electricity prices will be retained.
-- Price spikes will be retained as legitimate market outcomes.
-- Extreme prices will not be deleted or winsorized without documented justification.
-- Correlation will not be interpreted as causation.
-- Raw datasets will never be overwritten.
-- Processed outputs will be reproducibly generated from the raw data.
+Private correspondence must remain outside the public repository when it includes personal information, mail headers, or confidentiality language.
 
----
+## 15. Immediate next action
 
-## 10. Predictor Status
-
-| Predictor                     | Current status | Final-use requirement                            |
-| ----------------------------- | -------------- | ------------------------------------------------ |
-| Historical day-ahead LMP lags | Planned        | Lag must precede prediction cutoff               |
-| Hour of day                   | Approved       | Derived from target operating hour               |
-| Day of week                   | Approved       | Derived from target operating date               |
-| Weekend indicator             | Approved       | Derived from calendar                            |
-| Month and season              | Approved       | Derived from calendar                            |
-| Holiday indicator             | Planned        | Holiday calendar must be documented              |
-| Actual metered load           | Provisional    | Must be available before cutoff or excluded      |
-| Day-ahead load forecast       | Preferred      | Issuance timestamp and revision history required |
-| Observed weather              | Provisional    | Must be appropriately lagged                     |
-| Historical weather forecast   | Preferred      | Forecast must have been issued before cutoff     |
-| Natural-gas price             | Optional       | Must be historically available before cutoff     |
-
----
-
-## 11. Planned Models
-
-The primary model comparison will include:
-
-1. Historical-average or persistence baseline
-2. Regularized linear regression, such as Ridge or Elastic Net
-3. Random Forest regression
-4. Gradient-boosted tree regression, such as XGBoost
-
-A simple unregularized linear regression may also be included as an interpretable reference model.
-
-Additional models will only be added if they materially improve the study and can be completed within the course schedule.
-
-LSTM or GRU models are not part of the primary scope because they would increase implementation, tuning, and interpretability demands without being necessary to answer the research question.
-
----
-
-## 12. Feature Engineering Plan
-
-Potential features include:
-
-### 12.1 Price-History Features
-
-- Previous available hourly prices
-- Price at the same hour on the previous day
-- Price at the same hour during the previous week
-- Backward-looking rolling averages
-- Backward-looking rolling standard deviations
-- Recent minimum and maximum prices
-
-Every rolling or lagged feature must use only information available before the prediction cutoff.
-
-### 12.2 Calendar Features
-
-- Hour of day
-- Day of week
-- Weekend indicator
-- Holiday indicator
-- Month
-- Season
-- Cyclical sine and cosine encodings for hour and calendar variables
-
-### 12.3 Load Features
-
-- Day-ahead load forecast, if historically available
-- Properly lagged actual load, if used
-- Recent backward-looking load changes
-- Load forecast differences or ramp indicators, if available
-
-### 12.4 Weather Features
-
-- Forecast temperature
-- Forecast humidity
-- Forecast wind
-- Heating- and cooling-related variables
-- Properly lagged observations when forecast archives are unavailable
-
-Same-hour observed weather will not be used as a final predictor unless its availability at prediction time can be demonstrated.
-
----
-
-## 13. Validation and Evaluation Strategy
-
-### 13.1 Data Splitting
-
-The data will be divided chronologically.
-
-A possible structure is:
-
-- Training: earlier years
-- Validation: a later period used for model selection
-- Testing: the final untouched period
-
-The exact years will be determined after the full dataset is acquired and validated.
-
-Random train-test splitting will not be used.
-
-### 13.2 Cross-Validation
-
-Model tuning should use time-series cross-validation or rolling-origin evaluation.
-
-Each training window must occur before its corresponding validation window.
-
-### 13.3 Primary Metrics
-
-- Mean Absolute Error
-- Root Mean Squared Error
-
-MAE will provide an interpretable measure of typical forecast error. RMSE will place greater emphasis on large errors and price-spike periods.
-
-### 13.4 Secondary Analyses
-
-Forecast errors may also be evaluated by:
-
-- Market
-- Hour of day
-- Weekday versus weekend
-- Month or season
-- Negative-price periods
-- High-price periods
-- Normal-price versus extreme-price conditions
-
-MAPE will not be a primary metric because electricity prices can be zero or negative.
-
-### 13.5 Model Comparison
-
-The same evaluation definitions and test periods will be used wherever possible for both markets. Market-specific differences will be documented rather than concealed through forced variable equivalence.
-
-### 13.6 Planned Ablation and Error-Regime Analyses
-
-The final model-comparison deliverables will include two additions that improve interpretation without expanding the primary model families:
-
-- **Feature ablation:** compare the common calendar-and-availability-safe-price-history feature set with the NYISO augmented set that additionally includes `load_forecast_mw`. Use the same model, chronological split, and metric definitions for both runs. Label the NYISO result as conditional because its forecast availability is currently supported by a ZIP-entry proxy.
-- **Error by regime:** report MAE and RMSE by hour of day, weekday versus weekend, and normal-price versus extreme-price regimes. Define any regime threshold using training data only and preserve negative and high prices.
-
-If time permits after the primary comparison is complete, add feature-importance stability across rolling validation folds and a concise bounded-tuning diagnostic. Do not add new model families or use the final test set for these decisions.
-
----
-
-## 14. Completed Work
-
-- [x] Selected PJM and NYISO as the comparison markets.
-- [x] Selected PSEG and Hudson Valley Zone G as the representative locations.
-- [x] Defined the working research question.
-- [x] Defined one hourly observation per market as the unit of analysis.
-- [x] Selected January 2025 as the feasibility period.
-- [x] Identified 2020–2024 as the proposed primary study period.
-- [x] Downloaded the January 2025 feasibility datasets.
-- [x] Created `notebooks/01_data_inventory.ipynb`.
-- [x] Created `notebooks/02_data_cleaning.ipynb`.
-- [x] Validated all four electricity tables.
-- [x] Confirmed 744 unique January hours per market.
-- [x] Merged price and load within each market.
-- [x] Cleaned and validated Newark weather.
-- [x] Cleaned and validated Stewart weather.
-- [x] Rejected four clearly corrupted Stewart observations.
-- [x] Preserved missing and quality-flagged weather observations.
-- [x] Avoided future-looking weather interpolation.
-- [x] Added local and UTC timestamp handling for the January sample.
-- [x] Exported the two processed electricity datasets.
-- [x] Updated `.gitignore` to permit the intended processed CSV files.
-- [x] Committed and pushed the processed January datasets.
-- [x] Created `notebooks/03_exploratory_analysis.ipynb`.
-- [x] Prepared detailed historical-data questions for PJM.
-- [ ] Receive and document responses from PJM and NYISO.
-- [ ] Finalize the prediction cutoff.
-- [ ] Finalize the approved predictor set.
-- [ ] Complete and validate all January EDA requirements.
-- [ ] Acquire the full historical datasets.
-- [ ] Build final analysis-ready datasets.
-- [ ] Train and evaluate the forecasting models.
-- [ ] Complete the paper and presentation.
-
----
-
-## 15. Task 6 Milestone: January 2025 EDA
-
-Notebook:
-
-```text
-notebooks/03_exploratory_analysis.ipynb
-```
-
-The notebook has been created. The next step is to complete and validate its contents.
-
-### 15.1 Required EDA Work
-
-- [ ] Load both processed January CSV files using repository-relative paths.
-- [ ] Confirm that each market has 744 rows.
-- [ ] Confirm that each market has 744 unique hourly timestamps.
-- [ ] Confirm that price and load contain no missing values.
-- [ ] Display column names, data types, and timestamp ranges.
-- [ ] Produce descriptive statistics for price and load.
-- [ ] Plot hourly PJM and NYISO price time series.
-- [ ] Plot hourly PJM and NYISO load time series.
-- [ ] Compare the two price distributions.
-- [ ] Analyze prices by hour of day.
-- [ ] Analyze prices by day of week.
-- [ ] Calculate price-load correlations separately for each market.
-- [ ] Clearly label actual load as a provisional predictor.
-- [ ] Identify all negative-price hours.
-- [ ] Define and identify unusually high-price hours.
-- [ ] Retain all negative and high-price observations.
-- [ ] Write a short interpretation of the principal findings.
-- [ ] Document the limitations of using only January 2025.
-- [ ] Restart the kernel and run the notebook from top to bottom.
-- [ ] Resolve all notebook errors before considering the milestone complete.
-
-### 15.2 EDA Constraints
-
-- Use only the two committed January 2025 processed electricity datasets.
-- Treat January 2025 as a feasibility sample rather than the final study dataset.
-- Analyze PJM and NYISO separately before comparing them.
-- Do not interpret correlation as causation.
-- Do not treat actual load as an approved final predictor.
-- Do not delete, replace, or winsorize negative or unusually high prices.
-- Do not merge weather during this milestone.
-- Do not begin final model training in the EDA notebook.
-- Do not finalize the full-period predictor set before resolving the forecast-availability questions.
-
-### 15.3 EDA Deliverables
-
-- Validated January input tables
-- Descriptive-statistics tables
-- Price time-series charts
-- Load time-series charts
-- Price-distribution comparisons
-- Hour-of-day summaries
-- Day-of-week summaries
-- Price-load correlation results
-- Negative-price observation tables
-- High-price observation tables
-- Written findings and limitations
-- A notebook that runs successfully from a restarted kernel
-
----
-
-## 16. Open Questions and External Dependencies
-
-The following questions must be resolved before finalizing the full modeling dataset:
-
-### 16.1 PJM Questions
-
-1. Is PSEG pricing node 51301 the appropriate zonal day-ahead LMP aggregate to pair with the PS metered-load area?
-2. Does `total_lmp_da` represent the complete hourly day-ahead LMP in `$/MWh`, including energy, congestion, and marginal-loss components?
-3. Should finalized historical research use the Day-Ahead Hourly LMP feed or another settlements-verified feed?
-4. Does PJM maintain historical day-ahead load forecasts with target operating hours and issuance timestamps?
-5. Can the forecasts be retrieved as they existed before the relevant day-ahead market cutoff?
-6. What prediction cutoff would PJM recommend for an academic day-ahead forecasting experiment?
-7. Did definitions, identifiers, timestamp conventions, or processing methods change during 2020–2024?
-8. How are daylight-saving-time transition hours represented?
-
-### 16.2 NYISO Questions
-
-Equivalent NYISO questions must confirm:
-
-- The correct Hudson Valley Zone G day-ahead LMP dataset
-- The appropriate load area or forecast series
-- Historical day-ahead load-forecast availability
-- Forecast issuance and revision timestamps
-- Recommended prediction cutoff
-- Historical identifier or definition changes
-- Daylight-saving-time conventions
-- Comparability with the selected PJM data
-
-### 16.3 Weather Questions
-
-- Are historical archived weather forecasts available for both selected regions?
-- Do the archives include forecast issuance timestamps?
-- Are the forecast horizons compatible with the market prediction cutoff?
-- If forecast archives are unavailable, which lagged observed-weather variables can be used without leakage?
-
----
-
-## 17. Risk Management
-
-| Risk                                                                | Effect on project                            | Mitigation                                                                     |
-| ------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
-| Historical load forecasts are unavailable                           | Removes a desirable day-ahead predictor      | Use price history and calendar variables as the minimum defensible model       |
-| Forecast issuance times are unavailable                             | Creates leakage uncertainty                  | Exclude variables whose historical availability cannot be proven               |
-| Actual load creates target-time leakage                             | Inflated model performance                   | Keep actual load provisional or use valid lags                                 |
-| Observed weather creates leakage                                    | Inflated model performance                   | Use historical forecasts or carefully lagged observations                      |
-| PJM and NYISO variables are not directly equivalent                 | Weakens direct feature comparison            | Model markets separately and document differences                              |
-| Daylight-saving transitions create missing or duplicate local hours | Misaligned records                           | Store timezone-aware local and UTC timestamps and validate each year           |
-| Extreme prices dominate squared-error measures                      | Can obscure typical performance              | Retain extremes and report both MAE and RMSE                                   |
-| Missing weather observations reduce usable data                     | Can create inconsistent samples              | Document missingness and use backward-looking methods only if justified        |
-| Data definitions changed during 2020–2024                           | Produces invalid historical joins            | Verify identifiers and definitions before bulk processing                      |
-| Scope becomes too large                                             | Threatens completion within 13 weeks         | Limit the primary study to two markets, two locations, and four model families |
-| Model tuning becomes excessive                                      | Delays writing and evaluation                | Use bounded, documented hyperparameter searches                                |
-| Git commits include unrelated files                                 | Makes project history difficult to interpret | Review `git status` and stage related files deliberately                       |
-
----
-
-## 18. Thirteen-Week Schedule
-
-| Week | Primary objective                           | Deliverable                                                  |
-| ---- | ------------------------------------------- | ------------------------------------------------------------ |
-| 1    | Finalize research question and scope        | Documented question, locations, target, and exclusions       |
-| 2    | Validate data availability                  | Data inventory and source documentation                      |
-| 3    | Build January feasibility pipeline          | Reproducible cleaning and validation notebook                |
-| 4    | Complete preliminary EDA                    | Executed January EDA notebook, figures, tables, and findings |
-| 5    | Review literature and prepare proposal      | Research proposal and preliminary bibliography               |
-| 6    | Acquire full historical data                | Documented raw 2020–2024 datasets                            |
-| 7    | Clean, align, and engineer features         | Validated analysis-ready datasets                            |
-| 8    | Complete first major paper sections         | Midterm draft                                                |
-| 9    | Build baseline and regularized models       | Baseline and linear-model results                            |
-| 10   | Build tree-based models                     | Random Forest and gradient-boosting results                  |
-| 11   | Tune, evaluate, and compare models          | Final metric tables and diagnostic figures                   |
-| 12   | Write results, limitations, and conclusions | Complete final-paper draft                                   |
-| 13   | Revise and prepare presentation             | Final paper, repository, and presentation                    |
-
-The schedule will remain aligned with the DATA 698 syllabus requirements, including:
-
-- Research proposal of at least 3 pages
-- Midterm draft of approximately 10–12 pages or more
-- Final paper of approximately 15–20 single-spaced pages or more
-- Final presentation of approximately 5–10 minutes
-
----
-
-## 19. Literature Review Plan
-
-The literature review will address:
-
-- Day-ahead electricity-price forecasting
-- Characteristics of PJM and NYISO day-ahead markets
-- Statistical electricity-price models
-- Regularized regression for time-series forecasting
-- Random Forest and gradient-boosting methods
-- Price spikes and negative electricity prices
-- Load and weather as electricity-price predictors
-- Chronological validation and data-leakage prevention
-- Cross-market forecasting comparisons
-
-Sources should primarily include:
-
-- Peer-reviewed journal articles
-- Conference papers where appropriate
-- PJM and NYISO technical documentation
-- Government sources such as EIA and NOAA
-- Authoritative software documentation for implemented methods
-
-Every source used in the final paper must be recorded with sufficient information for complete citation.
-
----
-
-## 20. Reproducibility and Repository Standards
-
-- Run project commands from the repository root.
-- Use repository-relative paths in notebooks and reusable code.
-- Do not depend on a specific Windows user directory.
-- Keep raw data immutable.
-- Store temporary transformations under `data/interim/`.
-- Store analysis-ready datasets under `data/processed/`.
-- Store model outputs, predictions, and metrics under `outputs/`.
-- Store report figures and tables under the appropriate report directories.
-- Use clear notebook execution order.
-- Restart the kernel and run every completed notebook from top to bottom.
-- Record dataset sources, fields, units, and decisions under `docs/`.
-- Use Git commits that group logically related changes.
-- Review `git status` before staging files.
-- Do not use `git add .` without reviewing every included change.
-- Do not commit credentials, tokens, personal information, or restricted data.
-- Keep public processed feasibility samples only when repository size and data-use rules permit them.
-
----
-
-## 21. Post-gate Planning Task
-
-Define the first baseline-model development task for the full 2020–2024 study period.
-
-1. Review the January checkpoint contract and unresolved availability limitations.
-2. Decide whether the next unit is full-period data acquisition or baseline-model scaffolding.
-3. Keep January 2025 as feasibility evidence, not final modeling evidence or a basis for capstone conclusions.
-
-Do not train, tune, or compare models until the next task is explicitly scoped and the appropriate historical data are available.
-
----
-
-## 22. Tasks That Can Proceed While Awaiting ISO Responses
-
-The following work can proceed safely:
-
-- Complete January exploratory data analysis.
-- Continue the literature review.
-- Build the project bibliography.
-- Document data dictionaries.
-- Prepare documentation and tests needed for the Task 7 checkpoint.
-- Draft the introduction, background, and methodology sections.
-- Document all provisional variables and unresolved decisions.
-
-After Task 7 passes, baseline-model scaffolding and chronological-splitting work may begin using the validated checkpoint tables.
-
-The following work should wait:
-
-- Final predictor approval
-- Final prediction-cutoff definition
-- Bulk 2020–2024 processing
-- Use of same-hour actual load in final models
-- Use of same-hour observed weather in final models
-- Final comparison of market predictor sets
-
----
-
-## 23. Definition of Project Completion
-
-The project will be considered complete when:
-
-- The final research question is precise and academically defensible.
-- The PJM and NYISO targets and locations are fully documented.
-- The prediction cutoff is explicitly defined.
-- Every final predictor is verified as available before that cutoff.
-- The full historical data are reproducibly cleaned and validated.
-- Timezone and daylight-saving transitions are handled correctly.
-- Leakage-safe features are generated reproducibly.
-- Baseline, regularized, Random Forest, and boosted-tree models are trained.
-- Models are evaluated using chronological out-of-sample data.
-- PJM and NYISO results are compared using consistent metrics.
-- Negative and high-price performance is documented.
-- Limitations and market differences are clearly explained.
-- The final paper satisfies the DATA 698 requirements.
-- The repository contains reproducible code and documentation.
-- Completed notebooks run successfully from restarted kernels.
-- The final presentation clearly explains the research question, methods, findings, limitations, and significance.
-
----
-
-## 24. Project Status Summary
-
-**Current phase:** January 2025 pre-modeling completion gate.
-
-**Verified checkpoint:** Notebook 02 has two 744-row processed electricity tables and a 4,464-row NYISO forecast-vintage table. Notebook 04 Tasks 1–6, including calendar and cutoff-safe price-feature validation, are complete. The reusable January preprocessing path has been reconciled and tested against Notebook 02's canonical schema and weather policies.
-
-**Current working implementation:** `notebooks/04_feature_engineering.ipynb` and `src/electricity_forecasting/feature_engineering.py`.
-
-**Exact next task:** Post-gate planning — define the first full-period baseline-model development task.
-
-**Primary limitations:** NYISO selected load forecasts use a ZIP-entry last-modified-time availability proxy; PJM's D−1 11:00 cutoff and price-schedule availability remain provisional; PJM lacks a verified comparable historical load-forecast vintage series; and NOAA raw timestamp handling needs DST validation before the multi-year expansion.
-
-**Pre-modeling exit:** all seven authoritative tasks pass, January modeling-ready tables are validated, notebooks run fresh, tests/Ruff pass, and documentation matches the implementation.
-
----
-
-## 25. Optional Interactive Results Dashboard
-
-If the forecasting analysis, final paper, and presentation remain on schedule, the project will include a Streamlit dashboard for communicating the results.
-
-Potential dashboard features include:
-
-- PJM PSEG and NYISO Hudson Valley market selection
-- Historical day-ahead price exploration
-- Actual-versus-predicted hourly price charts
-- Model comparisons using MAE and RMSE
-- Forecast-error analysis by hour, weekday, and season
-- Negative-price and unusually high-price analysis
-- Feature-importance visualizations
-- Downloadable prediction and evaluation tables
-
-The dashboard will read saved predictions, metrics, and model outputs. It will not retrain models whenever a user opens the application.
-
-The dashboard is a secondary project deliverable. Completion of the validated forecasting analysis, academic paper, and presentation takes priority.
+Begin the 2020–2024 source-continuity and acquisition audit. Validate identifiers, annual schemas, timestamp conventions, and forecast coverage before final multiyear feature generation or model fitting.
