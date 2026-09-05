@@ -7,61 +7,80 @@ Detailed reasoning lives in `docs/methodology_decisions.md`. This table is the d
 | D-001 | 2026-08-24 | Use PJM PSEG pnode 51301 and NYISO HUD VL/PTID 61758; model markets separately. | Active |
 | D-002 | 2026-08-24 | Use `day_ahead_price_usd_mwh` as the canonical target name and `actual_load_mw` for observed target-hour load. | Active; reusable January path reconciled and tested in Task 2 |
 | D-003 | 2026-08-24 | Use `timestamp_utc` for joins/order/splits and timezone-aware `timestamp_local` for interpretation/calendar features. | Active |
-| D-004 | 2026-08-24 | Use NYISO D−1 05:00 America/New_York as the provisional cutoff and select the latest eligible vintage. | Active, provisional |
-| D-005 | 2026-08-24 | Preserve `availability_is_proxy=True` for all current NYISO selections because ZIP-entry modification time is not an authoritative publication timestamp. | Active limitation |
-| D-006 | 2026-08-24 | Use PJM D−1 11:00 America/New_York as a configurable provisional cutoff while authoritative confirmation is absent. | Active, provisional |
+| D-004 | 2026-08-24 | Use NYISO D−1 05:00 America/New_York as the provisional cutoff and select the latest eligible vintage. | Superseded in wording by D-016; 05:00 cutoff remains active |
+| D-005 | 2026-08-24 | Preserve `availability_is_proxy=True` for all current NYISO selections because ZIP-entry modification time is not an authoritative publication timestamp. | Superseded by D-016; ZIP timing is now secondary provenance |
+| D-006 | 2026-08-24 | Use PJM D−1 11:00 America/New_York as a configurable provisional cutoff while authoritative confirmation is absent. | Superseded in wording by D-018; 11:00 cutoff remains active |
 | D-007 | 2026-08-24 | Exclude same-hour actual load, observed weather, target components, identifiers, and forecast audit fields from operational predictors. | Active |
 | D-008 | 2026-08-24 | Require forecast-origin-aware availability tests before approving historical lags or rolling features. | Active |
 | D-009 | 2026-08-24 | Treat the downloaded NOAA LCD values as SI and reconcile reusable code to Notebook 02's selection and audit policy. | Active; January implementation verified in Task 2 |
+| D-010 | 2026-08-24 | Proceed without blocking on unanswered ISO correspondence; keep assumptions conservative, testable, configurable, and explicitly provisional. | Active |
+| D-011 | 2026-08-24 | Complete the seven pre-modeling tasks before baseline model development. | Completed; all seven tasks passed by 2026-08-31 |
 | D-012 | 2026-08-25 | Select one eligible NOAA report per January hour by `FM-15`, then `FM-12`, then `FM-16` priority; retain missingness, quality, rejection, and imputation audit flags. | Active for January 2025; validate NOAA timestamp behavior across DST before the 2020–2024 expansion |
 | D-013 | 2026-08-25 | Require a common-versus-NYISO-augmented feature ablation and error-by-regime reporting in final model comparison; treat importance stability and tuning diagnostics as time-permitting. | Active; no new model families or final-test-driven selection |
-| D-010 | 2026-08-24 | Proceed without blocking on unanswered ISO correspondence; keep assumptions conservative, testable, configurable, and explicitly provisional. | Active |
-| D-011 | 2026-08-24 | Complete the seven pre-modeling tasks before baseline model development. | Active |
-| D-014 | 2026-08-29 | For January 2025 NYISO historical-price features, retain a prior-day same-hour price only when its provisional availability time is no later than the target cutoff; compute the 24-hour mean only from those safe lag values. | Active; price-schedule availability is provisional and does not replace the load-forecast proxy warning |
-| D-015 | 2026-08-30 | Apply the same cutoff-safe prior-day price-lag and full-window rolling-feature pattern to PJM PSEG, using the provisional PJM D−1 11:00 America/New_York cutoff. | Active; cutoff and price-schedule availability remain provisional |
+| D-014 | 2026-08-29 | For January 2025 NYISO historical-price features, retain a prior-day same-hour price only when its provisional availability time is no later than the target cutoff; compute the 24-hour mean only from those safe lag values. | Active; price-schedule availability remains provisional |
+| D-015 | 2026-08-30 | Apply the same cutoff-safe prior-day price-lag and full-window rolling-feature pattern to PJM PSEG, using the PJM D−1 11:00 America/New_York cutoff. | Active; price-schedule availability remains provisional |
+| D-016 | 2026-09-01 | Use NYISO P-7 `Last Updated` as the best available public-source evidence of forecast availability; set `availability_basis="p7_last_updated"` and keep `availability_is_proxy=True` until NYISO confirms the field's formal publication semantics. Retain ZIP-entry timestamps as secondary provenance. | Active; replaces the ZIP-only timing rule in D-005 |
+| D-017 | 2026-09-01 | Treat NYISO TB-064 and TB-088 as resolving DST conventions at the documentation level: fall-back uses a repeated 01:00 with `HB25` in MIS Upload/Download; spring-forward omits `HB02`. Historical 2020–2024 files still require implementation and regression testing. | Active |
+| D-018 | 2026-09-01 | Treat PJM's D−1 11:00 EPT forecast cutoff as supported by PJM correspondence/public timing evidence; apply a strict `< 11:00` project eligibility rule. | Active |
 
 When a decision changes, add a new row that identifies the replaced decision rather than silently rewriting the historical rationale.
 
-# Methodological decisions
+# Current methodological decisions
 
-## NYISO January 2025 load-forecast cutoff and vintage selection
+## NYISO load-forecast availability and vintage selection
 
-For the January 2025 NYISO Hudson Valley feasibility sample, the day-ahead
-prediction cutoff is defined as 5:00 a.m. America/New_York on the calendar day
-before the target delivery date.
+For each NYISO target hour, define the day-ahead prediction cutoff as 5:00 a.m. America/New_York on the calendar day before delivery.
 
-For each target hour, retain forecast vintages only when:
+The current primary availability evidence is the P-7 public report's `Last Updated` timestamp:
 
-`forecast_available_at <= prediction_cutoff`
+```text
+availability_basis = "p7_last_updated"
+availability_is_proxy = True
+```
 
-Select the eligible vintage with the latest `forecast_available_at`. Require
-exactly one selected vintage per target hour; a tie at the latest eligible
-availability timestamp is treated as a data-quality error.
+`availability_is_proxy=True` means the timing semantics are inferred from NYISO's public interface rather than directly confirmed by NYISO as a formal publication timestamp. ZIP-entry last-modified timestamps remain secondary provenance/audit values when available.
 
-`forecast_available_at` is derived from the archived ZIP entry's recorded
-last-modified timestamp. It is therefore a proxy for original NYISO forecast
-availability and is retained with `availability_is_proxy=True` and
-`availability_basis="zip_entry_last_modified"`.
+For each target hour:
 
-Use `load_forecast_mw` as the currently approved NYISO load-based candidate
-predictor. Exclude same-hour actual load and forecasts available after the
-cutoff from model inputs. Retain forecast timing and source-provenance fields
-for auditability rather than as model features.
+1. preserve all P-7 vintages whose rolling multi-day horizon contains the target hour;
+2. require `forecast_available_at < prediction_cutoff`;
+3. reject any vintage at or after the 5:00 a.m. cutoff; and
+4. select the latest eligible earlier vintage.
 
-This decision applies to the January 2025 feasibility sample and must be
-reassessed before extending the analysis to the planned 2020–2024 study period.
+A tie at the latest eligible availability timestamp is a data-quality error and must not be resolved arbitrarily.
 
-## PJM January 2025 historical day-ahead price features
+The January forecast-vintage and modeling-ready outputs must be regenerated after P-7 `Last Updated` is integrated into the implementation.
 
-For each PJM PSEG target delivery hour, use the provisional prediction cutoff of D−1 11:00 America/New_York.
+## PJM historical load-forecast cutoff
 
-Use the same configurable provisional price-schedule availability rule as NYISO: 00:00 America/New_York on the source price’s delivery date. Retain a prior-day same-hour source price only when:
+Use PJM `load_frcstd_hist` with `forecast_area = "MIDATL"` as the historical load-forecast source. MIDATL is a regional proxy for PSEG, not a PSEG-specific load forecast.
 
-`previous_day_same_hour_price_available_at <= prediction_cutoff`
+For each PJM target hour, use the strict project rule:
 
-The approved PJM candidate features are `hour_of_day`, `day_of_week`, `is_weekend`, `day_ahead_price_lag_1d`, and `day_ahead_price_lag_1d_rolling_mean_24h`. Same-hour metered load, observed weather, target components, identifiers, and audit fields remain excluded.
+```text
+forecast_available_at < 11:00 a.m. EPT on D−1
+```
 
-Fresh-kernel January verification produced 744 target hours, zero target-day prices available by cutoff, 720 cutoff-safe prior-day lags, and 697 full-window rolling means. The common PJM/NYISO set differs from the NYISO augmented set only by `load_forecast_mw`.
+PJM confirmed that `evaluated_at_ept` represents when a historical forecast was generated and made available. Select the latest eligible MIDATL snapshot before the cutoff.
 
-The PJM cutoff and price-schedule availability rule remain provisional pending authoritative evidence.
+## Historical day-ahead price features
 
+For each PJM or NYISO target delivery hour, derive historical price lags only from source values that are provably available by the applicable forecast cutoff.
+
+The approved January common candidate features include:
+
+- `hour_of_day`;
+- `day_of_week`;
+- `is_weekend`;
+- `day_ahead_price_lag_1d`; and
+- `day_ahead_price_lag_1d_rolling_mean_24h`.
+
+NYISO may additionally use `load_forecast_mw` after the P-7 timing path is regenerated and revalidated. Same-hour actual load, observed weather, target components, identifiers, and audit fields remain excluded from the strict operational predictor set.
+
+## NYISO daylight-saving-time conventions
+
+NYISO TB-064 documents the 25-hour fall-back day. The first 01:00 occurs in EDT and the second 01:00 occurs in EST; MIS Upload/Download identifies the repeated second hour as `HB25`.
+
+NYISO TB-088 documents the 23-hour spring-forward day. `HB02` does not occur in MIS Upload/Download and the sequence advances from 01:00 EST to 03:00 EDT.
+
+These rules are adopted at the documentation level. The project must still test actual 2020–2024 historical files and prove UTC uniqueness across transition dates before final modeling.

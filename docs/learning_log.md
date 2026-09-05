@@ -2,6 +2,43 @@
 
 This file records what the student can now explain and reproduce, not merely what an agent changed.
 
+## 2026-09-01 — Public-source forecast availability and DST evidence
+
+### Purpose
+
+Replace the earlier NYISO ZIP-entry-only timing assumption with stronger public-source evidence and distinguish source-documentation resolution from implementation completion.
+
+### What I can explain
+
+- A file timestamp and a publication/availability timestamp are not automatically the same thing.
+- NYISO's P-7 public interface associates each dated ISO Load Forecast artifact with a timezone-specific `Last Updated` timestamp.
+- The project can use P-7 `Last Updated` as the best available public-source evidence of forecast availability while still labeling its formal semantics as inferred rather than operator-confirmed.
+- `availability_is_proxy=True` now means public-source inferred, not merely ZIP-metadata based.
+- ZIP-entry last-modified time is retained as secondary provenance rather than the primary availability rule when P-7 `Last Updated` is available.
+- NYISO TB-064 documents the 25-hour fall-back day and the repeated second 01:00 hour; TB-088 documents the 23-hour spring-forward day and missing HB02.
+- Documentation can resolve what a system is supposed to do while actual 2020–2024 files still require implementation and regression testing.
+
+### Decision or consequence
+
+- Use `availability_basis="p7_last_updated"` for the NYISO P-7 path.
+- Keep `availability_is_proxy=True` until NYISO explicitly confirms the formal public-availability meaning of `Last Updated`.
+- Preserve ZIP timestamps as secondary audit/provenance fields where available.
+- Regenerate the January NYISO forecast-vintage timing before treating that checkpoint as current.
+- Treat NYISO DST rules as documentation-resolved but implementation/testing-pending.
+
+### Verification evidence
+
+- `docs/current_status.md`, `docs/project_plan.md`, `docs/methodology_decisions.md`, `docs/data_source_register.md`, `docs/data_dictionary.md`, and `docs/notebook_pipeline_map.md` now use the P-7 timing rule consistently.
+- TB-064 and TB-088 have been reviewed and incorporated into the documented DST rules.
+
+### Remaining limitation
+
+NYISO has not directly confirmed that P-7 `Last Updated` formally means the moment the specific artifact became publicly available. Historical P-7 metadata coverage across 2020–2024 still must be captured or reconstructed.
+
+### Next single action
+
+Update the NYISO forecast-ingestion/vintage-selection code to ingest P-7 `Last Updated`, retain ZIP timestamps as secondary provenance, regenerate January timing, and rerun cutoff/leakage validation.
+
 ## 2026-08-24 — Pre-modeling checkpoint
 
 ### What I can explain
@@ -49,7 +86,7 @@ Create the Task 7 modeling-ready checkpoint tables with explicit target, predict
 
 ### Limitation I must remember
 
-Every current selected NYISO forecast uses a ZIP-entry last-modified availability proxy. A proxy is evidence for a feasibility pipeline, not proof of the original publication timestamp.
+At this stage, every selected NYISO forecast used a ZIP-entry last-modified availability proxy. That rule was later superseded by the September 1 P-7 `Last Updated` decision above; the old entry is retained to show how the evidence and methodology evolved.
 
 ## 2026-08-31 — Task 7 pre-modeling checkpoint
 
@@ -72,7 +109,6 @@ The role dictionary is like a C# schema contract or a SQL view definition: it ex
 - Both checkpoints: 744 unique ordered target hours and nonmissing targets.
 - Same-hour actual load and observed weather were excluded from candidate predictors.
 - `pytest -v` passed 21 tests and Ruff passed.
-
 
 ## Remaining learning tasks
 
@@ -184,9 +220,8 @@ Before final model selection, I will be able to explain why a feature-ablation c
 - `notebooks/04_feature_engineering.ipynb`
 - `docs/methodology_decisions.md`
 - `docs/data_source_register.md`
-- `PROJECT_PLAN.md`
+- `docs/project_plan.md`
 
 ### Next step
 
 - Complete the feature-role classification in Notebook 04 while waiting for NYISO’s response.
-
