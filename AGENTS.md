@@ -1,354 +1,261 @@
 # Project overview
 
-This repository contains a graduate data-science capstone comparing hourly day-ahead electricity-price forecasting in two wholesale electricity markets:
+This repository contains a graduate data-science capstone comparing the incremental predictive value of day-ahead load forecasts for hourly day-ahead electricity-price forecasting in:
 
-- PJM PSEG pricing zone
-- NYISO Hudson Valley Zone G
+- PJM PSEG pricing zone; and
+- NYISO Hudson Valley Zone G.
 
 The project must remain achievable within the DATA 698 capstone schedule, academically defensible, reproducible, and suitable for presentation to professors and prospective employers.
 
 # Current execution checkpoint
 
-The January 2025 pre-modeling completion gate is complete. The project is now preparing the full 2020–2024 implementation.
+The project is currently **Conditional GO** for the revised load-forecast-centered research question.
 
-The authoritative current state and exact next action live in `docs/current_status.md`. Do not duplicate or override that task with stale instructions in this file.
+The authoritative current state lives in:
 
-Current next action:
+- `docs/current_status.md`
+- `docs/full_go_checkpoint.md`
 
-- Update NYISO forecast ingestion/vintage selection to use P-7 `Last Updated` as the primary availability evidence.
-- Retain ZIP-entry timestamps as secondary provenance.
-- Regenerate the January NYISO forecast-vintage table.
-- Rerun cutoff and leakage validation.
-- Revalidate the January NYISO modeling-ready checkpoint before bulk 2020–2024 acquisition.
+Do not treat the revised research design as fully committed until every Full-GO criterion passes.
 
-The seven January pre-modeling tasks are complete. Do not re-open them unless a regression, source change, or new evidence requires it.
+Current execution order:
 
-# Working research question
+1. implement PJM January 2025 `load_frcstd_hist` / `MIDATL` latest-eligible forecast selection;
+2. regenerate NYISO January 2025 forecast timing using P-7 `Last Updated`;
+3. test representative 2020, 2024, and DST historical periods for both markets;
+4. calculate valid pre-cutoff forecast coverage and document gaps;
+5. record Full GO, Conditional GO, or No-GO; and
+6. only after Full GO, begin bulk 2020–2024 acquisition and freeze the feature-ablation design.
 
-How accurately can statistical and machine-learning models forecast hourly day-ahead electricity prices in the PJM PSEG and NYISO Hudson Valley zones, and how does predictive performance differ between the two markets?
+Do not skip directly to model tuning before this checkpoint is complete.
 
-Treat this as the working question unless the student explicitly changes it.
+# Research question
+
+> How much does adding day-ahead load forecasts improve hourly day-ahead electricity-price prediction accuracy in PJM PSEG and NYISO Hudson Valley, and is the improvement larger in one market than the other?
+
+# Supplementary question
+
+> Does the day-ahead load forecast contain more unique predictive information about electricity prices in the market where the larger improvement occurs?
+
+The supplementary question is a predictive/statistical explanation, not a broad causal market-design claim.
+
+# Full-GO experimental design
+
+After the data gate passes, compare the same model under two feature sets.
+
+Base feature set:
+
+```text
+calendar features
++ cutoff-safe historical price features
+```
+
+Augmented feature set:
+
+```text
+calendar features
++ cutoff-safe historical price features
++ eligible day-ahead load forecast
+```
+
+Keep the model family, chronological split, preprocessing, random seed, and metrics fixed when comparing the base and augmented feature sets.
+
+Primary models:
+
+- persistence baseline;
+- Ridge or Elastic Net regression;
+- Random Forest; and
+- XGBoost or `HistGradientBoostingRegressor`.
+
+PyTorch and pretrained time-series models are optional extensions only after the core analysis is complete.
 
 # Unit of analysis and target
 
-The unit of analysis is one market-location-hour.
+Unit: one market-location-hour.
 
-The target variable is the published hourly day-ahead locational marginal price in dollars per megawatt-hour:
+Targets:
 
-- PJM PSEG: `total_lmp_da`
-- NYISO Hudson Valley: `LBMP ($/MWHr)`
+- PJM PSEG: complete hourly day-ahead LMP, canonical project name `day_ahead_price_usd_mwh`;
+- NYISO Hudson Valley: complete hourly day-ahead LBMP, canonical project name `day_ahead_price_usd_mwh`.
 
-Preserve energy, congestion, and marginal-loss components when available, but do not use contemporaneous target components as predictors of total LMP/LBMP.
+Locations:
 
-# Geographic scope
+- PJM PSEG pnode `51301`, paired metered-load area `PS`;
+- NYISO `HUD VL`, PTID `61758`.
 
-Use one comparable zonal location from each market:
-
-- PJM PSEG zone, pricing node `51301`, paired metered-load area `PS`
-- NYISO Hudson Valley Zone G, `HUD VL`, PTID `61758`
-
-Do not expand the primary study to multiple pricing locations unless the student explicitly approves a scope change.
+PJM MIDATL forecast load is a regional proxy for PSEG and must never be described as a PSEG-specific forecast.
 
 # Study period
 
-January 2025 is the feasibility and pipeline-development sample.
+January 2025 is a feasibility and pipeline-development sample only.
 
-The planned main study period is January 1, 2020 through December 31, 2024, subject to source continuity, historical coverage, DST validation, and final source decisions.
+Planned primary study period: January 1, 2020 through December 31, 2024, subject to passing the Full-GO coverage and continuity checks.
 
-Do not use January 2025 as the final evidence base or for final capstone conclusions.
+# Forecast cutoffs
 
-# Student background and teaching approach
+Every operational predictor must be available strictly before the applicable cutoff:
 
-The student is an experienced C#/.NET and SQL developer developing proficiency in Python, pandas, NumPy, scikit-learn, statistical learning, time-series forecasting, testing, Jupyter notebooks, and reproducible data-science workflows.
+- PJM: D−1 11:00 `America/New_York`;
+- NYISO: D−1 05:00 `America/New_York`.
 
-Use C#, LINQ, SQL, relational-database, or strongly typed programming comparisons when they make an unfamiliar Python or data-science concept easier to understand.
+A predictor at exactly the cutoff is excluded under the conservative project rule unless stronger authoritative evidence justifies otherwise.
 
-Act as both a pair programmer and a Python/data-science tutor:
+# PJM historical load forecast rule
 
-- Break work into small, testable tasks.
-- Explain the data-science purpose before substantial implementation.
-- Explain unfamiliar Python syntax and pandas operations.
-- Let the student type or modify important learning exercises.
-- Prefer focused edits over replacing entire notebooks or modules.
-- Diagnose errors before correcting them.
-- Provide explicit verification after each meaningful task.
-- Never invent model results, validation results, citations, source definitions, or conclusions.
-- Distinguish exploratory work from final reproducible code.
-- Do not declare work complete merely because code runs without errors.
+Use:
 
-For guided notebook or coding work, normally proceed one meaningful section at a time and wait for the student's actual output or traceback before moving on.
+- feed: `load_frcstd_hist`;
+- forecast area: `MIDATL`;
+- availability: `evaluated_at_ept` / `evaluated_at_utc`;
+- target hour: `forecast_hour_beginning_ept` / `forecast_hour_beginning_utc`;
+- value: `forecast_load_mw`.
 
-# Textbook-guided methodology
+For each target hour, select the latest MIDATL snapshot satisfying:
 
-When applicable, use the terminology and recommended practices from:
+```text
+evaluated_at_ept < prediction_cutoff
+```
 
-1. *An Introduction to Statistical Learning with Applications in Python* (`ISLP`)
-2. *Hands-On Machine Learning with Scikit-Learn and PyTorch* (`HOML`)
+PJM confirmed `evaluated_at_ept` as the generated-and-available timestamp. Require no duplicate selected target hours and preserve all audit fields.
 
-Use these as methodological guides rather than inflexible requirements. Give priority to valid time-series methodology, leakage prevention, forecast realism, DATA 698 requirements, and the documented project scope.
+# NYISO historical load forecast rule
 
-Consult `docs/textbook_notes/` for project-specific summaries and applications. Do not fabricate quotations, page numbers, chapter references, or citations.
+Use P-7 ISO Load Forecast / `isolf` data for Hudson Valley.
 
-# Planned model scope
-
-Keep the primary comparison manageable.
-
-Candidate model families:
-
-- persistence and historical-average baselines;
-- ordinary and regularized linear regression;
-- Random Forest;
-- gradient-boosted trees such as XGBoost or `HistGradientBoostingRegressor`.
-
-Neural networks, LSTM/GRU, causal inference, RAG, real-time streaming, price-spike classification, and extensive cloud architecture are not required for the primary capstone unless the student explicitly approves a scope change.
-
-# Candidate predictors
-
-Potential predictors include:
-
-- cutoff-safe lagged day-ahead prices;
-- cutoff-safe rolling price statistics;
-- day-ahead load forecasts with defensible historical availability timestamps;
-- carefully justified lagged actual load;
-- archived weather forecasts available by forecast origin;
-- carefully justified lagged observed weather;
-- calendar fields such as hour, weekday, weekend, holiday, month, and season;
-- interactions supported by domain reasoning; and
-- natural-gas prices if a reliable temporally valid source can be added without threatening schedule.
-
-Do not assume a variable is valid simply because it exists in the dataset.
-
-# Forecast cutoff and predictor availability
-
-Every model must represent a realistic day-ahead prediction.
-
-Before using a predictor, document:
-
-- target operating hour;
-- forecast origin;
-- predictor availability timestamp;
-- original-vintage versus revised status; and
-- whether it was knowable at the applicable cutoff.
-
-Current project cutoffs:
-
-- NYISO: strictly before D−1 05:00 `America/New_York`
-- PJM: strictly before D−1 11:00 `America/New_York`
-
-## NYISO P-7 availability
-
-Use P-7 public-report `Last Updated` as the best available public-source evidence of forecast availability:
+Use:
 
 ```text
 availability_basis = "p7_last_updated"
 availability_is_proxy = True
 ```
 
-`availability_is_proxy=True` means the formal availability semantics are inferred from NYISO's public interface rather than directly operator-confirmed. ZIP-entry last-modified timestamps are secondary provenance when P-7 `Last Updated` exists.
+P-7 public-report `Last Updated` is the best available public-source evidence of forecast availability, but its formal publication semantics remain inferred rather than operator-confirmed. ZIP-entry timestamps remain secondary provenance.
 
-If later NYISO evidence defines `Last Updated` differently, revise the rule, rebuild affected features, and rerun leakage tests.
+For each target hour:
 
-## PJM historical load forecasts
+1. preserve every P-7 vintage whose multi-day horizon contains the target hour;
+2. construct the D−1 05:00 EPT cutoff;
+3. reject vintages with `forecast_available_at >= prediction_cutoff`; and
+4. select the latest eligible earlier vintage.
 
-Use `load_frcstd_hist` with `forecast_area = "MIDATL"`. PJM confirmed `evaluated_at_ept` as the generated-and-available timestamp. MIDATL is a regional proxy for PSEG, not a PSEG-specific forecast.
+# Full-GO coverage gate
 
-If availability cannot be established for a predictor, exclude it from the strict operational model or clearly label the analysis as explanatory/upper-bound.
+For representative 2020, 2024, and DST sample periods in both markets, measure the percentage of target hours with a defensible pre-cutoff load forecast.
 
-# Leakage prevention
-
-Temporal and target leakage are major project risks.
+The gate passes only if coverage is sufficiently high for the comparison and all material gaps are understood and documented.
 
 Never:
 
-- use future observations when creating lagged or rolling features;
-- calculate preprocessing statistics from the complete dataset;
-- perform random train/test splitting for the primary evaluation;
-- use same-hour actual load if unavailable at prediction time;
-- use observed target-hour weather from after forecast origin;
-- use revised forecasts as though they were original vintages;
-- use components of the target to predict the total target;
-- impute validation/test values using future information; or
-- select models based on final test-set performance.
+- use a post-cutoff forecast to fill a gap;
+- silently impute a missing forecast vintage;
+- infer an availability timestamp without documenting the evidence basis; or
+- declare Full GO before historical continuity and coverage are measured.
 
-Rolling features must shift before rolling when necessary. Fit imputers, encoders, scalers, feature selectors, and models using training data only.
+# Leakage prevention
 
-# Time-series evaluation
+Never use:
 
-Use chronological rather than random splits.
+- future target values;
+- same-hour actual load in the strict operational model;
+- target-hour observed weather in the strict operational model;
+- target components as predictors of the total target;
+- post-cutoff forecast vintages;
+- preprocessing fitted on validation/test data; or
+- random train/test splitting for the primary evaluation.
 
-Maintain separate training, validation, and final test data. Use expanding-window or rolling-origin validation when practical. Keep the final test set untouched until model design and hyperparameter selection are complete.
+Historical price lags and rolling features must pass forecast-origin availability checks, not merely chronological row-order checks.
 
-Candidate full-period split, subject to final coverage review:
+# Evaluation
 
-- training: 2020–2022
-- validation/tuning: 2023
-- final test: 2024
+Use chronological train/validation/test periods. Candidate full-period design:
 
-Evaluate both markets using the same primary split logic and metrics so the comparison is meaningful.
+- train: 2020–2022;
+- validation/tuning: 2023;
+- final untouched test: 2024.
 
-# Evaluation metrics
+Primary metrics:
 
-Use:
+- MAE;
+- RMSE;
+- percentage improvement in MAE/RMSE from base to augmented features.
 
-- Mean Absolute Error (MAE) as the primary metric;
-- Root Mean Squared Error (RMSE) as a primary/secondary error metric; and
-- coefficient of determination where it aids interpretation.
+R² may support interpretation. MAPE is not primary because prices may be zero or negative.
 
-Use MAPE only with caution because electricity prices can be zero, negative, or near zero.
+For the supplementary question, approved diagnostics include:
 
-When useful, report performance by market, hour, weekday/weekend, season, and price regime. Do not claim one market is inherently more predictable based only on raw error magnitude; consider price scale, volatility, extremes, and baseline-relative performance.
+- base-versus-augmented error reduction;
+- baseline residual association with `load_forecast_mw`;
+- permutation importance; and
+- out-of-sample R² change where useful.
 
-# Timestamp and DST requirements
+Do not attribute differences to “market design” unless a specific measurable mechanism is separately demonstrated.
 
-Maintain both market-local and UTC timestamps where appropriate. Use `timestamp_utc` as the canonical unique key.
+# Timekeeping and DST
 
-Do not assume all sources share the same convention. Document hour beginning/ending, local/UTC, EST/EDT/EPT, and special DST markers.
+Use `timestamp_utc` as the canonical unique key for joins, ordering, duplicate detection, splitting, and modeling. Retain timezone-aware `timestamp_local` for interpretation, calendar features, and cutoff construction.
 
-NYISO documentation rules:
+NYISO documentation:
 
-- TB-064: 25-hour fall-back day; first 01:00 in EDT, second 01:00 in EST, second hour represented as `HB25` in MIS Upload/Download.
-- TB-088: 23-hour spring-forward day; `HB02` is absent and the sequence advances from 01:00 EST to 03:00 EDT.
+- TB-064: fall-back 25-hour day, repeated second 01:00, `HB25` in MIS Upload/Download;
+- TB-088: spring-forward 23-hour day, no `HB02`.
 
-These are resolved at the documentation level but must be tested against actual 2020–2024 historical files.
+Actual 2020–2024 source files must still be regression-tested. PJM Data Miner timestamp behavior must also be tested empirically across DST.
 
-NOAA LCDv2 raw `DATE` values use fixed Local Standard Time and must not be treated as DST-adjusted `America/New_York` timestamps.
+# Required final-study data
 
-# January 2025 feasibility tables
+Required:
 
-The January PJM and NYISO processed tables each contain 744 hourly target rows and have passed the pre-modeling checkpoint.
+- PJM PSEG day-ahead price history 2020–2024;
+- NYISO Hudson Valley day-ahead LBMP history 2020–2024;
+- PJM MIDATL `load_frcstd_hist` history with `evaluated_at_*`;
+- NYISO P-7 Hudson Valley forecast history with usable `Last Updated` metadata;
+- prior history needed to construct safe price features; and
+- calendar variables.
 
-PJM combines PSEG day-ahead LMP, PS load, and Newark weather. NYISO combines Hudson Valley day-ahead LBMP, Hudson Valley integrated load, and Stewart weather.
+Useful but not required for the revised primary question:
 
-Actual load and observed weather may be retained for exploration, validation, and later safe-lag construction, but not automatically used contemporaneously as operational predictors.
+- actual load;
+- NOAA observed weather;
+- archived weather forecasts;
+- natural-gas prices;
+- neural networks or pretrained forecasting models.
 
-The NYISO January forecast-vintage and modeling-ready outputs must be regenerated after integrating P-7 `Last Updated` timing.
+# Student background and teaching approach
 
-# Data integrity and auditability
+The student is an experienced C#/.NET and SQL developer developing proficiency in Python, pandas, NumPy, scikit-learn, statistical learning, time-series forecasting, testing, Jupyter notebooks, and reproducible data-science workflows.
 
-Treat files under `data/raw/` as immutable source data. Never overwrite, manually edit, or silently repair a raw source file.
+Use C#, LINQ, SQL, relational-database, or strongly typed programming comparisons when they make unfamiliar Python or data-science concepts easier to understand.
 
-Store:
+Break work into small, testable tasks. Explain the data-science purpose before substantial implementation. Diagnose before fixing. Provide explicit verification. Never invent results, citations, source definitions, or conclusions.
 
-- intermediate data under `data/interim/`;
-- validated analysis-ready data under `data/processed/`;
-- figures under `reports/figures/`;
-- tables under `reports/tables/`;
-- trained models under `outputs/models/`;
-- model metrics under `outputs/metrics/`; and
-- predictions under `outputs/predictions/`.
+# Data and code rules
 
-Document source URLs, download dates, query parameters, market locations, units, availability evidence, and definitions in `docs/data_source_register.md`.
+- Raw files under `data/raw/` are immutable.
+- Intermediate data go under `data/interim/`.
+- Validated analysis-ready data go under `data/processed/`.
+- Figures go under `reports/figures/`.
+- Tables go under `reports/tables/`.
+- Models, metrics, and predictions go under `outputs/`.
+- Stable reusable logic belongs in `src/electricity_forecasting/`.
+- Use Python 3.12 and repository-relative paths.
+- Use pytest and Ruff before major checkpoints.
 
-Document methodological choices in `docs/methodology_decisions.md`, field/schema rules in `docs/data_dictionary.md`, and dated implementation decisions in `docs/decisions.md`.
+# Documentation governance
 
-# Data-quality validation
+After meaningful work:
 
-Add assertions or tests for:
+- update `docs/current_status.md` with the verified state and exact next action;
+- update `docs/full_go_checkpoint.md` when a Full-GO criterion is completed or fails;
+- update `docs/decisions.md` for new methodological decisions;
+- update `docs/methodology_decisions.md` for governing rules;
+- update `docs/data_dictionary.md` for schema/field-role changes;
+- update `docs/data_source_register.md` for source/provenance changes;
+- update `docs/notebook_pipeline_map.md` when the high-level workflow changes;
+- update `docs/project_plan.md` when scope, milestones, or final design changes; and
+- update `docs/learning_log.md` for meaningful lessons and reproduced verification.
 
-- expected row counts;
-- column presence;
-- timestamp parsing, uniqueness, ordering, and ranges;
-- missingness and numeric conversion;
-- units;
-- valid measurement ranges;
-- join cardinality and duplicate records;
-- timezone conversion and DST transitions;
-- forecast cutoff eligibility;
-- latest-vintage tie handling; and
-- absence of future information in model features.
-
-A merge that runs without an exception is not proof of correctness. Inspect unmatched timestamps and unexpected row-count changes.
-
-# Code organization
-
-Use Python 3.12.
-
-Prefer `pathlib.Path`, descriptive names, small single-responsibility functions, type hints, concise docstrings, readable pandas, scikit-learn `Pipeline`/`ColumnTransformer` where appropriate, fixed seeds, explicit configuration, and deterministic outputs where practical.
-
-Keep notebooks focused on explanation, exploration, and results. Move stable reusable logic into `src/electricity_forecasting/`. Avoid copying substantial logic across notebooks and avoid unnecessary frameworks or abstractions.
-
-# Notebook requirements
-
-A notebook must:
-
-- run beginning-to-end after a kernel restart;
-- contain its own imports or import project modules;
-- not depend on variables created in another notebook;
-- show important validation results;
-- explain each major section;
-- avoid hidden manual steps; and
-- use relative project paths.
-
-Use notebooks for learning and exploration, but move finalized production logic into `src/`.
-
-# Testing requirements
-
-Use `pytest`.
-
-Before declaring a task complete:
-
-1. Run the relevant notebook or script.
-2. Run applicable tests.
-3. Inspect row counts and missingness.
-4. Check timestamp uniqueness and ordering.
-5. Review joins and feature timing.
-6. Confirm raw data was not modified.
-7. Explain how the result can be reproduced.
-
-When correcting a bug, add a regression test when practical. Run Ruff on relevant code before a checkpoint or commit.
-
-# Academic integrity
-
-The student must be able to explain and defend every methodological and programming decision.
-
-Never provide fabricated citations, quotations, definitions, model results, statistical significance, or unsupported conclusions.
-
-Clearly distinguish observed facts, source documentation, assumptions, methodological decisions, exploratory findings, and final results.
-
-Use primary/authoritative sources for PJM, NYISO, NOAA, EIA, market rules, and data definitions whenever possible.
-
-# Research-paper requirements
-
-The final paper should allow a reader to trace every table, figure, metric, and conclusion to reproducible code and stored output.
-
-Support problem statement, research question, literature review, data, methodology, EDA, model design, evaluation, results, limitations, conclusions, references, and appendices as appropriate.
-
-Do not write final conclusions before validated results exist. Use Quarto for the final reproducible report unless another format is explicitly chosen.
+Do not modify documentation merely to restate unchanged information.
 
 # Git workflow
 
-Work in small, meaningful units.
-
-Before recommending or making a commit:
-
-- run relevant tests when code changed;
-- review changed files;
-- verify generated/private files are excluded;
-- update documentation when necessary; and
-- summarize what the commit represents.
-
-Do not commit credentials, secrets, private correspondence, notebook checkpoints, caches, or prohibited raw data.
-
-Do not push, merge, delete branches, or rewrite Git history without explicit student approval.
-
-# Scope control
-
-This is a 13-week graduate capstone, not a production electricity-market forecasting platform.
-
-Classify additional work as required for a valid capstone, useful if time permits, or future enhancement.
-
-Prioritize valid comparable data, realistic predictor timing, reproducible preprocessing, strong baselines, leakage-free evaluation, interpretable model comparison, a defensible paper/presentation, and professional repository quality.
-
-# Project documentation maintenance
-
-When completing a substantial task:
-
-- update `docs/current_status.md` with completed work, validation results, unresolved issues, and the exact next task;
-- update `docs/decisions.md` when a methodological or architectural decision changes;
-- update `docs/data_dictionary.md` when fields, units, time zones, transformations, or feature roles change;
-- update `docs/data_source_register.md` when source evidence or provenance changes;
-- update `docs/notebook_pipeline_map.md` when the high-level flow changes;
-- update `docs/project_plan.md` only when scope, schedule, milestones, or deliverables change; and
-- update `docs/learning_log.md` for meaningful decisions, errors, corrections, assumptions, or lessons—not every routine command.
-
-Do not modify documentation merely to restate unchanged information. Include relevant documentation updates in the same Git commit as the corresponding implementation change.
+Work in small, meaningful units. Run tests when code changes. Review changed files. Do not commit credentials, private correspondence, notebook checkpoints, caches, or prohibited raw data. Do not push, merge, delete branches, or rewrite history without explicit student approval.
