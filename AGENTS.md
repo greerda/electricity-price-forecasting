@@ -228,6 +228,18 @@ Use C#, LINQ, SQL, relational-database, or strongly typed programming comparison
 
 Break work into small, testable tasks. Explain the data-science purpose before substantial implementation. Diagnose before fixing. Provide explicit verification. Never invent results, citations, source definitions, or conclusions.
 
+# Textbook-guided methodology
+
+Use these books as methodological guides when they are appropriate to the research question and valid time-series design:
+
+1. *An Introduction to Statistical Learning with Applications in Python* (`ISLP`);
+2. *Hands-On Machine Learning with Scikit-Learn and PyTorch* (`HOML`); and
+3. *Forecasting: Principles and Practice, the Pythonic Way* (`FPPPy`).
+
+Consult `docs/textbook_notes/` for project-specific notes, `docs/literature_source_register.md` for the master source inventory and FPPPy chapter-to-capstone checklist, and `reports/references.bib` for citation keys and bibliographic metadata.
+
+Give priority to DATA 698 requirements, leakage-free time-series methodology, and the documented project design over generic textbook examples. Paraphrase sources, verify chapter claims, and never fabricate quotations, page numbers, or citations.
+
 # Data and code rules
 
 - Raw files under `data/raw/` are immutable.
